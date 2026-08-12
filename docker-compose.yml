@@ -1,0 +1,88 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: vip-app
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+    depends_on:
+      - postgres
+      - redis
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: vip-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vip-postgres
+    environment:
+      POSTGRES_DB: vip
+      POSTGRES_USER: vip
+      POSTGRES_PASSWORD: vip
+    ports:
+      - "5432:5432"
+    volumes:
+      - vip-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: vip-redis
+    ports:
+      - "6379:6379"
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: vip-queue
+    working_dir: /var/www/html
+    command: php artisan queue:work --tries=1 --sleep=1
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - redis
+      - postgres
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: vip-scheduler
+    working_dir: /var/www/html
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - redis
+      - postgres
+
+  workspace:
+    build:
+      context: .
+      dockerfile: docker/workspace/Dockerfile
+    container_name: vip-workspace
+    working_dir: /var/www/html
+    tty: true
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  vip-postgres-data:

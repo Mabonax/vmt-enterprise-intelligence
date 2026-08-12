@@ -1,0 +1,30 @@
+{
+    "name": "Marketplace Heartbeat",
+    "slug": "marketplace_heartbeat",
+    "description": "Summarise enterprise marketplace readiness and connector health.",
+    "version": "1.0.0",
+    "permissions": [
+        "intelligence.execute"
+    ],
+    "category": "Operations",
+    "author": "VMT Enterprise Intelligence",
+    "connector": "laravel",
+    "handler_class": "App\\Domains\\Intelligence\\Tools\\PlatformStatusTool",
+    "inputs": {
+        "type": "object",
+        "properties": {
+            "scope": {
+                "type": "string"
+            }
+        }
+    },
+    "outputs": {
+        "type": "object",
+        "properties": {
+            "summary": {
+                "type": "string"
+            }
+        }
+    },
+    "dependencies": []
+}
