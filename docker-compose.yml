@@ -10,9 +10,21 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
+      AI_PROVIDER: ollama
+      AI_MODEL: llama3.2:3b
+      AI_FALLBACK_PROVIDER: ollama
+      AI_FALLBACK_MODEL: llama3.2:3b
+      AI_PROVIDER_OLLAMA_ENDPOINT: http://ollama:11434/api
+      AI_PROVIDER_OLLAMA_EMBEDDING_MODEL: embeddinggemma
+      AI_KNOWLEDGE_EMBEDDINGS_PROVIDER: ollama
+      AI_KNOWLEDGE_EMBEDDINGS_MODEL: embeddinggemma
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
 
   nginx:
     image: nginx:1.27-alpine
@@ -43,6 +55,28 @@ services:
     ports:
       - "6379:6379"
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: vip-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - vip-ollama-data:/root/.ollama
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: vip-ollama-init
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until ollama list >/dev/null 2>&1; do sleep 2; done
+        ollama pull llama3.2:3b
+        ollama pull embeddinggemma
+    depends_on:
+      - ollama
+
   queue:
     build:
       context: .
@@ -50,12 +84,26 @@ services:
     container_name: vip-queue
     working_dir: /var/www/html
     command: php artisan queue:work --tries=1 --sleep=1
+    environment:
+      AI_PROVIDER: ollama
+      AI_MODEL: llama3.2:3b
+      AI_FALLBACK_PROVIDER: ollama
+      AI_FALLBACK_MODEL: llama3.2:3b
+      AI_PROVIDER_OLLAMA_ENDPOINT: http://ollama:11434/api
+      AI_PROVIDER_OLLAMA_EMBEDDING_MODEL: embeddinggemma
+      AI_KNOWLEDGE_EMBEDDINGS_PROVIDER: ollama
+      AI_KNOWLEDGE_EMBEDDINGS_MODEL: embeddinggemma
     volumes:
       - ./:/var/www/html
     depends_on:
-      - app
-      - redis
-      - postgres
+      app:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
 
   scheduler:
     build:
@@ -64,12 +112,26 @@ services:
     container_name: vip-scheduler
     working_dir: /var/www/html
     command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    environment:
+      AI_PROVIDER: ollama
+      AI_MODEL: llama3.2:3b
+      AI_FALLBACK_PROVIDER: ollama
+      AI_FALLBACK_MODEL: llama3.2:3b
+      AI_PROVIDER_OLLAMA_ENDPOINT: http://ollama:11434/api
+      AI_PROVIDER_OLLAMA_EMBEDDING_MODEL: embeddinggemma
+      AI_KNOWLEDGE_EMBEDDINGS_PROVIDER: ollama
+      AI_KNOWLEDGE_EMBEDDINGS_MODEL: embeddinggemma
     volumes:
       - ./:/var/www/html
     depends_on:
-      - app
-      - redis
-      - postgres
+      app:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
 
   workspace:
     build:
@@ -78,11 +140,20 @@ services:
     container_name: vip-workspace
     working_dir: /var/www/html
     tty: true
+    environment:
+      AI_PROVIDER: ollama
+      AI_MODEL: llama3.2:3b
+      AI_PROVIDER_OLLAMA_ENDPOINT: http://ollama:11434/api
     volumes:
       - ./:/var/www/html
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
 
 volumes:
   vip-postgres-data:
+  vip-ollama-data:
