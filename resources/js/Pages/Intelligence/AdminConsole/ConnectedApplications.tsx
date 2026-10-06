@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 
@@ -17,11 +18,12 @@ type Props = {
     }>;
     organizations: Array<{ id: string; name: string; code: string }>;
     defaults: { provider: string; model: string; capabilities: string[] };
-    routes: { storeTenant: string; storeClient: string; issueKey: string; revokeKey: string };
+    routes: { storeOrganization: string; storeTenant: string; storeClient: string; issueKey: string; revokeKey: string };
     flash?: { status?: string | null; gatewayCredential?: Record<string, string | number | null> | null };
 };
 
 export default function ConnectedApplications(props: Props) {
+    const organization = useForm({ name: '', code: '' });
     const tenant = useForm({
         organization_id: props.organizations[0]?.id ?? '',
         name: '',
@@ -33,17 +35,21 @@ export default function ConnectedApplications(props: Props) {
         name: '',
         description: '',
         client_type: 'erp',
-        environment: 'production',
+        environment: 'development',
         enabled_providers: [props.defaults.provider],
         enabled_models: [props.defaults.model],
         enabled_capabilities: props.defaults.capabilities.filter((value) =>
-            ['chat', 'summarise', 'report', 'translate', 'classify', 'search', 'action'].includes(value),
+            ['chat', 'summarise', 'report', 'classify'].includes(value),
         ),
         scopes: ['chat'],
         rate_limit_per_minute: 60,
         daily_quota: 100000,
     });
 
+    useEffect(() => {
+        if (!tenant.data.organization_id && props.organizations[0]) tenant.setData('organization_id', props.organizations[0].id);
+        if (!client.data.gateway_tenant_id && props.tenants[0]) client.setData('gateway_tenant_id', props.tenants[0].id);
+    }, [props.organizations, props.tenants, tenant.data.organization_id, client.data.gateway_tenant_id]);
     const toggle = (capability: string) => {
         const active = client.data.enabled_capabilities.includes(capability);
         client.setData(
@@ -89,6 +95,15 @@ export default function ConnectedApplications(props: Props) {
                     </section>
                 )}
 
+                <form onSubmit={(event) => { event.preventDefault(); organization.post(props.routes.storeOrganization, { preserveScroll: true, onSuccess: () => organization.reset() }); }} className="space-y-4 rounded-3xl border border-zinc-800 bg-zinc-950/60 p-6">
+                    <h2 className="text-xl font-semibold text-zinc-100">Create organization</h2>
+                    <p className="text-sm text-zinc-400">Create the organization that owns your connected application.</p>
+                    <input aria-label="Organization name" placeholder="Organization name" required value={organization.data.name} onChange={(event) => organization.setData('name', event.target.value)} className="w-full rounded-xl border-zinc-700 bg-zinc-900 text-zinc-100" />
+                    <input aria-label="Organization code" placeholder="Organization code" required value={organization.data.code} onChange={(event) => organization.setData('code', event.target.value)} className="w-full rounded-xl border-zinc-700 bg-zinc-900 text-zinc-100" />
+                    {Object.values(organization.errors).map((error, index) => <p key={index} role="alert" className="text-sm text-red-400">{error}</p>)}
+                    <button disabled={organization.processing} className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-950">Create organization</button>
+                </form>
+                {[...Object.values(tenant.errors), ...Object.values(client.errors)].map((error, index) => <p key={index} role="alert" className="text-sm text-red-400">{error}</p>)}
                 <div className="grid gap-6 xl:grid-cols-2">
                     <form
                         onSubmit={(event) => {

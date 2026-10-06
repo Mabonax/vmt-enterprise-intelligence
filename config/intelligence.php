@@ -88,6 +88,10 @@ return [
             'retry_attempts' => (int) env('AI_PROVIDER_OLLAMA_RETRY_ATTEMPTS', 1),
             'retry_sleep_milliseconds' => (int) env('AI_PROVIDER_OLLAMA_RETRY_SLEEP_MS', 200),
             'keep_alive' => env('AI_PROVIDER_OLLAMA_KEEP_ALIVE', '5m'),
+            'options' => array_filter([
+                'num_gpu' => env('AI_PROVIDER_OLLAMA_NUM_GPU') === null ? null : (int) env('AI_PROVIDER_OLLAMA_NUM_GPU'),
+                'num_predict' => env('AI_PROVIDER_OLLAMA_NUM_PREDICT') === null ? null : (int) env('AI_PROVIDER_OLLAMA_NUM_PREDICT'),
+            ], static fn ($value): bool => $value !== null),
             'embedding_model' => env('AI_PROVIDER_OLLAMA_EMBEDDING_MODEL', 'embeddinggemma'),
             'api_key' => env('AI_PROVIDER_OLLAMA_API_KEY', ''),
         ],

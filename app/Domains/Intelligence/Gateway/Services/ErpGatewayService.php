@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Intelligence\Gateway\Services;
 
+use App\Domains\Intelligence\Contracts\AiProvider;
 use App\Domains\Intelligence\DTOs\ChatMessage;
 use App\Domains\Intelligence\DTOs\ChatRequest;
 use App\Domains\Intelligence\DTOs\ToolContext;
@@ -13,6 +14,7 @@ use App\Domains\Intelligence\Enums\ProviderType;
 use App\Domains\Intelligence\Gateway\DTOs\GatewayCapabilityRequestData;
 use App\Domains\Intelligence\Gateway\Models\AiProviderProfile;
 use App\Domains\Intelligence\Gateway\Models\GatewayRequest;
+use App\Domains\Intelligence\Knowledge\Services\KnowledgeRetrievalService;
 use App\Domains\Intelligence\Models\ExecutionPlan;
 use App\Domains\Intelligence\Models\ExecutionTrace;
 use App\Domains\Intelligence\Security\DTOs\AuthenticatedGatewayClientData;
@@ -27,7 +29,6 @@ use App\Domains\Intelligence\Services\ToolExecutor;
 use App\Domains\Intelligence\Services\ToolRegistry;
 use App\Domains\Intelligence\Services\UsageTrackingService;
 use App\Domains\Intelligence\Services\VerificationEngine;
-use App\Domains\Intelligence\Knowledge\Services\KnowledgeRetrievalService;
 use Illuminate\Http\Request;
 
 class ErpGatewayService
@@ -119,7 +120,7 @@ class ErpGatewayService
                 'correlation_id' => $gatewayRequest->correlation_id,
                 'capability' => $request->capability,
             ],
-            toolDefinitions: $resolvedTools,
+            toolDefinitions: $request->allowActions() ? $resolvedTools : [],
             userPrompt: $request->prompt,
             user: null,
         );
@@ -216,7 +217,7 @@ class ErpGatewayService
                 $this->prompts->build($promptContext),
             ),
             metadata: [
-                'tools' => $resolvedTools,
+                'tools' => $request->allowActions() ? $resolvedTools : [],
                 'gateway_request_id' => $gatewayRequest->getKey(),
             ],
         ));
@@ -360,8 +361,8 @@ class ErpGatewayService
     }
 
     /**
-     * @param array<string, mixed> $route
-     * @return array{0: \App\Domains\Intelligence\Contracts\AiProvider, 1: string, 2: string}
+     * @param  array<string, mixed>  $route
+     * @return array{0: AiProvider, 1: string, 2: string}
      */
     private function resolveProviderWithFallback(array $route): array
     {

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Platform\DashboardController;
-use App\Http\Controllers\Platform\PlatformPageController;
-use App\Http\Controllers\Intelligence\AgentController;
 use App\Http\Controllers\Intelligence\AdminConsoleController;
+use App\Http\Controllers\Intelligence\AgentController;
 use App\Http\Controllers\Intelligence\ConnectedApplicationsController;
 use App\Http\Controllers\Intelligence\PromptTemplateController;
 use App\Http\Controllers\Intelligence\RuntimeController;
 use App\Http\Controllers\Intelligence\WorkspaceController;
+use App\Http\Controllers\Platform\DashboardController;
+use App\Http\Controllers\Platform\PlatformPageController;
 use App\Http\Controllers\ProfileController;
 use App\Support\Navigation\VipNavigation;
 use Illuminate\Foundation\Application;
@@ -241,6 +241,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/intelligence/admin-console/health', [AdminConsoleController::class, 'health'])->name('intelligence.admin-console.health');
     Route::get('/intelligence/admin-console/readiness', [AdminConsoleController::class, 'readiness'])->name('intelligence.admin-console.readiness');
     Route::get('/intelligence/admin-console/connected-applications', [ConnectedApplicationsController::class, 'index'])->name('intelligence.admin-console.connected-applications.index');
+    Route::post('/intelligence/admin-console/connected-applications/organizations', [ConnectedApplicationsController::class, 'storeOrganization'])->name('intelligence.admin-console.connected-applications.organizations.store');
     Route::post('/intelligence/admin-console/connected-applications/tenants', [ConnectedApplicationsController::class, 'storeTenant'])->name('intelligence.admin-console.connected-applications.tenants.store');
     Route::post('/intelligence/admin-console/connected-applications/clients', [ConnectedApplicationsController::class, 'storeClient'])->name('intelligence.admin-console.connected-applications.clients.store');
     Route::post('/intelligence/admin-console/connected-applications/clients/{client}/keys', [ConnectedApplicationsController::class, 'issueKey'])->name('intelligence.admin-console.connected-applications.clients.keys.issue');

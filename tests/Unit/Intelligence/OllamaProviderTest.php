@@ -39,6 +39,11 @@ class OllamaProviderTest extends TestCase
             ],
         ));
 
+        Http::assertSent(function ($request): bool {
+            $payload = json_decode($request->body());
+
+            return $payload->options instanceof \stdClass;
+        });
         $this->assertSame('Transport is live.', $response->message->content);
         $this->assertSame(7, $response->usage->inputTokens);
         $this->assertSame(4, $response->usage->outputTokens);

@@ -68,6 +68,7 @@ class GatewayApiTest extends TestCase
             ->assertJsonPath('verification.passed', true)
             ->assertJsonPath('output.text', 'Gateway response from Ollama.');
 
+        Http::assertSent(fn ($request): bool => $request['tools'] === []);
         $this->assertDatabaseHas('gateway_requests', [
             'capability' => 'chat',
             'status' => 'completed',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Intelligence;
 
+use App\Domains\Connections\Services\OrganizationRegistrationService;
 use App\Domains\Intelligence\Security\Enums\GatewayAuthMethod;
 use App\Domains\Intelligence\Security\Models\GatewayClient;
 use App\Domains\Intelligence\Security\Models\GatewayTenant;
@@ -96,6 +97,7 @@ class ConnectedApplicationsController extends Controller
                 )),
             ],
             'routes' => [
+                'storeOrganization' => route('intelligence.admin-console.connected-applications.organizations.store'),
                 'storeTenant' => route('intelligence.admin-console.connected-applications.tenants.store'),
                 'storeClient' => route('intelligence.admin-console.connected-applications.clients.store'),
                 'issueKey' => route('intelligence.admin-console.connected-applications.clients.keys.issue', ['client' => '__CLIENT__']),
@@ -105,6 +107,18 @@ class ConnectedApplicationsController extends Controller
                 ]),
             ],
         ]);
+    }
+
+    public function storeOrganization(Request $request): RedirectResponse
+    {
+        $this->authorizeOperator($request);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:191'],
+            'code' => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('organizations', 'code')],
+        ]);
+        app(OrganizationRegistrationService::class)->register($data);
+
+        return back()->with('status', 'Organization created. Select it to create a gateway tenant.');
     }
 
     public function storeTenant(Request $request): RedirectResponse

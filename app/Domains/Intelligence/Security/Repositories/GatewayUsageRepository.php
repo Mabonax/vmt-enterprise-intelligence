@@ -17,7 +17,7 @@ class GatewayUsageRepository
 
     public function requestsSince(?string $clientId, CarbonInterface $since): int
     {
-        return GatewayUsage::query()
+        return (int) GatewayUsage::query()
             ->when($clientId, fn ($query, string $id) => $query->where('gateway_client_id', $id))
             ->where('measured_at', '>=', $since)
             ->sum('request_count');
