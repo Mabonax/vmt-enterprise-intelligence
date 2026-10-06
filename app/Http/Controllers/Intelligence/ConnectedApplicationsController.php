@@ -159,6 +159,7 @@ class ConnectedApplicationsController extends Controller
         $client = $this->provisioning->createClient(array_merge($validated, [
             'organization_id' => $tenant->organization_id,
             'status' => 'active',
+            'scopes' => array_values($validated['enabled_capabilities']),
             'created_by' => (string) $request->user()->getKey(),
             'updated_by' => (string) $request->user()->getKey(),
             'metadata' => [
