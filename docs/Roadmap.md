@@ -1,49 +1,97 @@
 # Roadmap
 
-## Completed groundwork
+The project is now managed by product readiness rather than additive architecture phases.
 
-### Phases 1-10
+## Product identity
 
-- Foundation, auth, navigation, migrations, Docker, and domain-first scaffolding
-- Runtime, provider contracts, tools, connectors, knowledge, agents, operations, commercial, and admin console bounded contexts
-- Additive UI and API surfaces for internal platform management
+VMT Enterprise AI Gateway is the reusable intelligence middleware between VMT ERP products and AI runtimes.
 
-## Current phase
+The ERP owns business workflows. The gateway owns governed AI access. The runtime owns inference.
 
-### Phase 11: Enterprise AI Gateway repositioning
+## Readiness level 1: Foundation — complete
 
-- Audit the current implementation against the ERP gateway mission
-- Preserve existing bounded contexts and refocus their responsibilities
-- Introduce an ERP-facing gateway API contract
-- Replace stub providers with production local-first adapters
-- Normalize local-first configuration, deployment defaults, and security controls
-- Rewrite core documentation around the Enterprise AI Gateway narrative
+Delivered:
 
-See [Phase 11 Repositioning Plan](phase-11-enterprise-ai-gateway-repositioning.md).
+- Laravel 12 + Inertia platform foundation
+- authentication and administration
+- runtime execution, planning, verification, replay, and tracing
+- provider abstraction
+- tools and connector framework
+- knowledge ingestion and retrieval
+- multi-agent and operations bounded contexts
+- deployment/commercial governance
+- admin console
+- Docker, queues, scheduler, PostgreSQL, and Redis
 
-## Next implementation sequence
+## Readiness level 2: Gateway integration — substantially complete
 
-### Phase 11A: Gateway contract
+Delivered:
 
-- Add ERP authentication, ERP client registration, and gateway capability endpoints
-- Define stable request and response DTOs for ERP-safe AI capabilities
-- Introduce gateway audit logging and ERP request correlation
+- ERP-facing capability contract
+- chat, summarise, report, translate, classify, search, and action endpoints
+- gateway client and tenant models
+- API key, HMAC, and JWT authentication
+- replay protection
+- capability, model, and provider authorization
+- tenant isolation controls
+- audit logging and request correlation
+- provider allowlists and local-first egress controls
+- usage enforcement and security event logging
+- production Ollama adapter
+- real local model defaults
+- production blocking of scaffold providers
 
-### Phase 11B: Local provider rollout
+Remaining:
 
-- Deliver production Ollama support first
-- Add local OpenAI-compatible server support next
-- Add `llama.cpp` server and `vLLM` adapters afterwards
-- Keep cloud providers behind explicit enablement flags
+- first real VMT ERP integration
+- freeze an integration SDK/contract from that implementation
 
-### Phase 11C: Operational hardening
+## Readiness level 3: Deployment readiness — active
 
-- Expand admin console provider, connector, ERP, and queue telemetry
-- Add egress policy enforcement and provider allowlists
-- Add deployment runbooks and local AI readiness checks
+Current materialization work:
 
-### Phase 11D: ERP adoption
+- Docker-managed Ollama runtime
+- automatic bootstrap of the default chat and embedding models
+- gateway runtime readiness checks
+- deployment acceptance criteria
+- operator-facing visibility for connected applications, provider/model state, credentials, traces, and security events
+- non-mocked acceptance tests against an actual Ollama runtime
 
-- Integrate the first VMT ERP through the new gateway API
-- Validate end-to-end request tracing, knowledge retrieval, approvals, and action execution
-- Freeze and document the ERP contract for reuse across future VMT ERP deployments
+A deployment reaches this level only when `php artisan gateway:readiness` succeeds and a real gateway request completes against the configured runtime.
+
+## Readiness level 4: Production readiness — pending
+
+Required:
+
+- hardened production environment profile
+- TLS and secret-management runbook
+- backup/restore validation
+- queue and scheduler health monitoring
+- model storage and disk-capacity monitoring
+- rate-limit and load testing
+- failure/retry/fallback acceptance tests
+- tenant isolation verification against realistic datasets
+- approved operational support runbook
+- end-to-end observability from ERP request through inference and response
+
+## Readiness level 5: Multi-ERP adoption — pending
+
+Required:
+
+- onboard the second and third VMT ERP without changing provider-facing code
+- demonstrate shared capability contracts across products
+- demonstrate provider/model replacement without ERP rewrites
+- establish reusable ERP client SDKs
+- establish repeatable customer deployment and upgrade procedures
+
+## Immediate implementation order
+
+1. Complete Materialization Phase 1 local runtime readiness.
+2. Build the Connected Applications operator workflow.
+3. Integrate the first real VMT ERP.
+4. Run a non-mocked end-to-end acceptance suite.
+5. Freeze Gateway Contract v1.
+6. Harden production deployment.
+7. Add additional provider adapters only after the Ollama path is proven operational.
+
+Agents, commercial features, and advanced orchestration should not expand further until the first production-style ERP integration is proven.
