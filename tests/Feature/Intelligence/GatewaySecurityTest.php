@@ -45,7 +45,7 @@ class GatewaySecurityTest extends TestCase
 
         Http::fake([
             'http://localhost:11434/api/chat' => Http::response([
-                'model' => 'runtime-placeholder',
+                'model' => 'llama3.2:3b',
                 'message' => [
                     'role' => 'assistant',
                     'content' => 'HMAC gateway response.',
@@ -112,7 +112,7 @@ class GatewaySecurityTest extends TestCase
 
         Http::fake([
             'http://localhost:11434/api/chat' => Http::response([
-                'model' => 'runtime-placeholder',
+                'model' => 'llama3.2:3b',
                 'message' => ['role' => 'assistant', 'content' => 'Should not be used.'],
                 'done' => true,
                 'done_reason' => 'stop',
@@ -172,7 +172,7 @@ class GatewaySecurityTest extends TestCase
             'environment' => 'production',
             'enabled_capabilities' => $capabilities,
             'enabled_providers' => ['ollama'],
-            'enabled_models' => ['runtime-placeholder'],
+            'enabled_models' => ['llama3.2:3b'],
             'metadata' => [],
         ]);
 
