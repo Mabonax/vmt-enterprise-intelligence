@@ -46,6 +46,10 @@ class HandleInertiaRequests extends Middleware
                 'name' => config('app.name'),
                 'tagline' => 'Enterprise intelligence for the VMT ecosystem.',
             ],
+            'flash' => [
+                'status' => fn () => $request->session()->get('status'),
+                'gatewayCredential' => fn () => $request->session()->get('gatewayCredential'),
+            ],
         ];
     }
 }
