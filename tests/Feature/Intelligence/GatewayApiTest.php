@@ -25,7 +25,7 @@ class GatewayApiTest extends TestCase
 
         Http::fake([
             'http://localhost:11434/api/chat' => Http::response([
-                'model' => 'runtime-placeholder',
+                'model' => 'llama3.2:3b',
                 'message' => [
                     'role' => 'assistant',
                     'content' => 'Gateway response from Ollama.',
@@ -68,6 +68,7 @@ class GatewayApiTest extends TestCase
             ->assertJsonPath('verification.passed', true)
             ->assertJsonPath('output.text', 'Gateway response from Ollama.');
 
+        Http::assertSent(fn ($request): bool => $request['tools'] === []);
         $this->assertDatabaseHas('gateway_requests', [
             'capability' => 'chat',
             'status' => 'completed',
@@ -80,7 +81,7 @@ class GatewayApiTest extends TestCase
         ]);
         $this->assertDatabaseHas('provider_usage', [
             'provider' => 'ollama',
-            'model' => 'runtime-placeholder',
+            'model' => 'llama3.2:3b',
         ]);
         $this->assertDatabaseHas('connection_logs', [
             'connected_erp_id' => $erp->getKey(),
@@ -96,7 +97,7 @@ class GatewayApiTest extends TestCase
 
         Http::fake([
             'http://localhost:11434/api/chat' => Http::response([
-                'model' => 'runtime-placeholder',
+                'model' => 'llama3.2:3b',
                 'message' => [
                     'role' => 'assistant',
                     'content' => 'Action workflow completed.',

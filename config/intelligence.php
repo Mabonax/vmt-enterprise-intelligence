@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'default_provider' => env('AI_PROVIDER', 'ollama'),
-    'default_model' => env('AI_MODEL', 'runtime-placeholder'),
+    'default_model' => env('AI_MODEL', 'llama3.2:3b'),
     'default_agent' => env('AI_DEFAULT_AGENT', ''),
     'timeout' => (int) env('AI_TIMEOUT', 30),
     'streaming' => [
@@ -55,8 +55,8 @@ return [
             'default_strategy' => env('AI_KNOWLEDGE_CHUNKING', 'paragraph'),
         ],
         'embeddings' => [
-            'provider' => env('AI_KNOWLEDGE_EMBEDDINGS_PROVIDER', 'internal'),
-            'model' => env('AI_KNOWLEDGE_EMBEDDINGS_MODEL', 'hash-vector-v1'),
+            'provider' => env('AI_KNOWLEDGE_EMBEDDINGS_PROVIDER', 'ollama'),
+            'model' => env('AI_KNOWLEDGE_EMBEDDINGS_MODEL', 'embeddinggemma'),
         ],
     ],
     'prompt_registry' => [
@@ -65,7 +65,7 @@ return [
     'model_routing' => [
         'fallback' => [
             'provider' => env('AI_FALLBACK_PROVIDER', 'ollama'),
-            'model' => env('AI_FALLBACK_MODEL', 'runtime-placeholder'),
+            'model' => env('AI_FALLBACK_MODEL', 'llama3.2:3b'),
         ],
     ],
     'approval' => [
@@ -88,12 +88,16 @@ return [
             'retry_attempts' => (int) env('AI_PROVIDER_OLLAMA_RETRY_ATTEMPTS', 1),
             'retry_sleep_milliseconds' => (int) env('AI_PROVIDER_OLLAMA_RETRY_SLEEP_MS', 200),
             'keep_alive' => env('AI_PROVIDER_OLLAMA_KEEP_ALIVE', '5m'),
+            'options' => array_filter([
+                'num_gpu' => env('AI_PROVIDER_OLLAMA_NUM_GPU') === null ? null : (int) env('AI_PROVIDER_OLLAMA_NUM_GPU'),
+                'num_predict' => env('AI_PROVIDER_OLLAMA_NUM_PREDICT') === null ? null : (int) env('AI_PROVIDER_OLLAMA_NUM_PREDICT'),
+            ], static fn ($value): bool => $value !== null),
             'embedding_model' => env('AI_PROVIDER_OLLAMA_EMBEDDING_MODEL', 'embeddinggemma'),
             'api_key' => env('AI_PROVIDER_OLLAMA_API_KEY', ''),
         ],
         'anthropic' => ['enabled' => (bool) env('AI_PROVIDER_ANTHROPIC_ENABLED', false)],
         'gemini' => ['enabled' => (bool) env('AI_PROVIDER_GEMINI_ENABLED', false)],
-        'lmstudio' => ['enabled' => (bool) env('AI_PROVIDER_LMSTUDIO_ENABLED', true)],
+        'lmstudio' => ['enabled' => (bool) env('AI_PROVIDER_LMSTUDIO_ENABLED', false)],
     ],
     'discovered' => [
         'providers' => [],

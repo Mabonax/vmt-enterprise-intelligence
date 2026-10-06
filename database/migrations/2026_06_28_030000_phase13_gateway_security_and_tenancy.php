@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('gateway_tenants', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_tenants', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('organization_id')->nullable()->index();
             $table->string('name');
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreign('organization_id')->references('id')->on('organizations')->nullOnDelete();
         });
 
-        Schema::create('gateway_clients', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_clients', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->index();
             $table->uuid('organization_id')->nullable()->index();
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->foreign('connected_erp_id')->references('id')->on('connected_erps')->nullOnDelete();
         });
 
-        Schema::create('gateway_api_credentials', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_api_credentials', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_client_id')->index();
             $table->string('auth_method')->default('api_key')->index();
@@ -78,7 +78,7 @@ return new class extends Migration
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->cascadeOnDelete();
         });
 
-        Schema::create('gateway_scopes', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_scopes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->index();
             $table->uuid('gateway_client_id')->nullable()->index();
@@ -92,7 +92,7 @@ return new class extends Migration
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->cascadeOnDelete();
         });
 
-        Schema::create('gateway_policies', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_policies', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->index();
             $table->string('name');
@@ -107,7 +107,7 @@ return new class extends Migration
             $table->foreign('gateway_tenant_id')->references('id')->on('gateway_tenants')->cascadeOnDelete();
         });
 
-        Schema::create('gateway_rate_limits', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_rate_limits', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->index();
             $table->uuid('gateway_client_id')->nullable()->index();
@@ -123,7 +123,7 @@ return new class extends Migration
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->cascadeOnDelete();
         });
 
-        Schema::create('gateway_usage', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_usage', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->nullable()->index();
             $table->uuid('gateway_client_id')->nullable()->index();
@@ -147,7 +147,7 @@ return new class extends Migration
             $table->foreign('gateway_request_id')->references('id')->on('gateway_requests')->nullOnDelete();
         });
 
-        Schema::create('gateway_security_events', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_security_events', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->nullable()->index();
             $table->uuid('gateway_client_id')->nullable()->index();
@@ -168,7 +168,7 @@ return new class extends Migration
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->nullOnDelete();
         });
 
-        Schema::create('gateway_nonces', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_nonces', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_client_id')->index();
             $table->string('nonce');
@@ -181,15 +181,15 @@ return new class extends Migration
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->cascadeOnDelete();
         });
 
-        Schema::create('gateway_quotas', function (Blueprint $table): void {
+        $this->createTableIfMissing('gateway_quotas', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('gateway_tenant_id')->index();
             $table->uuid('gateway_client_id')->nullable()->index();
             $table->string('quota_type')->index();
             $table->unsignedBigInteger('limit_value');
             $table->unsignedBigInteger('consumed_value')->default(0);
-            $table->timestamp('window_starts_at')->index();
-            $table->timestamp('window_ends_at')->index();
+            $table->dateTime('window_starts_at')->index();
+            $table->dateTime('window_ends_at')->index();
             $table->json('metadata')->nullable();
             $table->timestamps();
 
@@ -208,6 +208,13 @@ return new class extends Migration
             $table->foreign('gateway_tenant_id')->references('id')->on('gateway_tenants')->nullOnDelete();
             $table->foreign('gateway_client_id')->references('id')->on('gateway_clients')->nullOnDelete();
         });
+    }
+
+    private function createTableIfMissing(string $name, callable $definition): void
+    {
+        if (! Schema::hasTable($name)) {
+            Schema::create($name, $definition);
+        }
     }
 
     public function down(): void

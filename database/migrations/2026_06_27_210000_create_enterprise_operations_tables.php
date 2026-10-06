@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('enterprise_missions', function (Blueprint $table): void {
+        $this->createTableIfMissing('enterprise_missions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('mission_key')->unique();
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('mission_objectives', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_objectives', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('title');
@@ -49,7 +49,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_phases', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_phases', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('name');
@@ -65,7 +65,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_executions', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_executions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('execution_key')->unique();
@@ -85,7 +85,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_milestones', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_milestones', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('title');
@@ -98,7 +98,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_checkpoints', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_checkpoints', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->uuid('mission_execution_id')->nullable()->index();
@@ -113,7 +113,7 @@ return new class extends Migration
             $table->foreign('mission_execution_id')->references('id')->on('mission_executions')->nullOnDelete();
         });
 
-        Schema::create('mission_dependencies', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_dependencies', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('dependency_type')->default('sequence')->index();
@@ -126,7 +126,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_outcomes', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_outcomes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('outcome_type')->default('delivery')->index();
@@ -141,7 +141,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_risks', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_risks', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('title');
@@ -157,7 +157,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_metrics', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_metrics', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('metric_key')->index();
@@ -170,7 +170,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_plan_versions', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_plan_versions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->unsignedInteger('version_number')->default(1);
@@ -193,10 +193,15 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
-            $table->unique(['enterprise_mission_id', 'version_number']);
+            $table->unique(['enterprise_mission_id', 'version_number'], 'mission_plan_version_unique');
         });
 
-        Schema::create('operations_agent_catalog', function (Blueprint $table): void {
+        if (! Schema::hasIndex('mission_plan_versions', ['enterprise_mission_id', 'version_number'], 'unique')) {
+            Schema::table('mission_plan_versions', function (Blueprint $table): void {
+                $table->unique(['enterprise_mission_id', 'version_number'], 'mission_plan_version_unique');
+            });
+        }
+        $this->createTableIfMissing('operations_agent_catalog', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('agent_id')->nullable()->index();
             $table->string('name');
@@ -215,7 +220,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('operations_agent_capabilities', function (Blueprint $table): void {
+        $this->createTableIfMissing('operations_agent_capabilities', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('agent_catalog_id')->index();
             $table->string('capability_key')->index();
@@ -227,7 +232,7 @@ return new class extends Migration
             $table->foreign('agent_catalog_id')->references('id')->on('operations_agent_catalog')->cascadeOnDelete();
         });
 
-        Schema::create('operations_agent_versions', function (Blueprint $table): void {
+        $this->createTableIfMissing('operations_agent_versions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('agent_catalog_id')->index();
             $table->string('version');
@@ -239,7 +244,7 @@ return new class extends Migration
             $table->foreign('agent_catalog_id')->references('id')->on('operations_agent_catalog')->cascadeOnDelete();
         });
 
-        Schema::create('operations_agent_providers', function (Blueprint $table): void {
+        $this->createTableIfMissing('operations_agent_providers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('provider_key')->unique();
             $table->string('name');
@@ -250,7 +255,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('operations_agent_skills', function (Blueprint $table): void {
+        $this->createTableIfMissing('operations_agent_skills', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('agent_catalog_id')->index();
             $table->string('skill_key')->index();
@@ -262,7 +267,7 @@ return new class extends Migration
             $table->foreign('agent_catalog_id')->references('id')->on('operations_agent_catalog')->cascadeOnDelete();
         });
 
-        Schema::create('operations_agent_availability', function (Blueprint $table): void {
+        $this->createTableIfMissing('operations_agent_availability', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('agent_catalog_id')->index();
             $table->string('availability_status')->default('available')->index();
@@ -274,7 +279,7 @@ return new class extends Migration
             $table->foreign('agent_catalog_id')->references('id')->on('operations_agent_catalog')->cascadeOnDelete();
         });
 
-        Schema::create('enterprise_events', function (Blueprint $table): void {
+        $this->createTableIfMissing('enterprise_events', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->nullable()->index();
             $table->string('event_type')->index();
@@ -289,7 +294,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->nullOnDelete();
         });
 
-        Schema::create('mission_policies', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_policies', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('policy_type')->index();
@@ -303,7 +308,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_compliance_reviews', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_compliance_reviews', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('framework')->index();
@@ -317,7 +322,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_approvals', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_approvals', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('approval_type')->default('sequential')->index();
@@ -337,7 +342,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_predictions', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_predictions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('prediction_type')->index();
@@ -351,7 +356,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('scenario_simulations', function (Blueprint $table): void {
+        $this->createTableIfMissing('scenario_simulations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('scenario_type')->index();
@@ -366,7 +371,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_decision_records', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_decision_records', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('decision_key')->index();
@@ -386,7 +391,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('mission_learning_cycles', function (Blueprint $table): void {
+        $this->createTableIfMissing('mission_learning_cycles', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('enterprise_mission_id')->index();
             $table->string('learning_type')->index();
@@ -399,7 +404,7 @@ return new class extends Migration
             $table->foreign('enterprise_mission_id')->references('id')->on('enterprise_missions')->cascadeOnDelete();
         });
 
-        Schema::create('enterprise_kpi_snapshots', function (Blueprint $table): void {
+        $this->createTableIfMissing('enterprise_kpi_snapshots', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('snapshot_key')->unique();
             $table->timestamp('recorded_at')->nullable()->index();
@@ -407,6 +412,13 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
+    }
+
+    private function createTableIfMissing(string $name, callable $definition): void
+    {
+        if (! Schema::hasTable($name)) {
+            Schema::create($name, $definition);
+        }
     }
 
     public function down(): void

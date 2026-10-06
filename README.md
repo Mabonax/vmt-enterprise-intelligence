@@ -1,57 +1,117 @@
 # VMT Enterprise AI Gateway
 
-VMT Enterprise AI Gateway is the centralized AI integration layer for VMT ERP systems. This repository is an existing Laravel 12 + Inertia React + TypeScript platform that already contains the bounded contexts needed for runtime execution, providers, tools, connectors, knowledge retrieval, agents, operations, commercial deployment management, and the admin console.
+VMT Enterprise AI Gateway is the centralized, provider-agnostic AI integration layer for VMT ERP systems.
 
-The current Phase 11 objective is a repositioning, not a rewrite:
+The product boundary is deliberate:
 
-- Every ERP should call this gateway for AI work
-- Local AI is the default deployment model
-- Cloud providers are optional and disabled by default
-- Runtime remains the execution engine
-- Existing bounded contexts are retained and refocused around ERP-safe AI delivery
+- ERP systems own business workflows and business data.
+- The gateway owns AI authentication, authorization, context assembly, retrieval, tools, routing, verification, audit, observability, and provider abstraction.
+- AI runtimes such as Ollama perform inference.
+- Local AI is the default deployment model.
+- Cloud providers remain optional and disabled by default.
 
-## What already exists
+## Current materialization status
 
-- Runtime execution, planning, verification, replay, and trace persistence
-- Provider discovery and container bindings behind `AiProvider`
-- Tool registry, execution, approval, sandbox, and usage tracking
-- Connector registry for REST, database, queue, webhook, storage, email, and related drivers
-- Knowledge ingestion, chunking, embeddings, retrieval, graph, citations, and health services
-- Optional multi-agent and operations orchestration flows
-- Commercial deployment, provisioning, subscription, usage, support, and readiness services
-- Admin Console monitoring, alerts, actions, audit, health, and readiness views
-- Docker, queue, scheduler, Redis, and seeded platform scaffolding
+The gateway is no longer only architectural scaffolding. The current implementation includes:
 
-## Current repositioning status
+- ERP-facing gateway capability endpoints
+- API key, HMAC, and JWT gateway authentication
+- replay protection, tenant isolation, scopes, provider/model authorization, and usage enforcement
+- request correlation, execution plans, execution traces, audit logs, security events, and usage records
+- knowledge retrieval, tools, approvals, and verification
+- a production Ollama adapter for chat, streaming, embeddings, model discovery, and health checks
+- an operational health endpoint at `GET /api/gateway/v1/health`
+- a CLI readiness check via `php artisan gateway:readiness`
 
-- The runtime and bounded contexts are real and reusable
-- The provider layer is still stub-backed and needs production adapters
-- The API surface is still biased toward an internal intelligence workspace and must gain an ERP-specific gateway contract
-- Commercial and admin surfaces need wording and metrics aligned to deployment operations rather than a generic AI platform narrative
+Scaffold-only providers are blocked from production gateway traffic by default. Ollama is the production local provider in the current materialization baseline.
 
-See [Enterprise AI Gateway Specification](docs/enterprise-ai-gateway-specification.md), [Phase 11 Repositioning Plan](docs/phase-11-enterprise-ai-gateway-repositioning.md), [Architecture](docs/Architecture.md), [Domain Overview](docs/Domain%20Overview.md), and [Roadmap](docs/Roadmap.md).
+See [Enterprise AI Gateway Specification](docs/enterprise-ai-gateway-specification.md), [Architecture](docs/Architecture.md), [Domain Overview](docs/Domain%20Overview.md), and [Roadmap](docs/Roadmap.md).
 
-## Quick start
+## Default local runtime
+
+The default local materialization profile is:
+
+- Provider: `ollama`
+- Chat model: `llama3.2:3b`
+- Embedding model: `embeddinggemma`
+- Cloud providers: disabled
+- Stub providers: disabled
+
+All values remain configurable through environment variables.
+
+## Docker quick start
+
+The Docker stack now includes PostgreSQL, Redis, Laravel, queue worker, scheduler, Nginx, Ollama, and an Ollama initialization container that pulls the required local models.
 
 ```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The application is exposed at:
+
+```text
+http://localhost:8080
+```
+
+The Ollama API is exposed at:
+
+```text
+http://localhost:11434
+```
+
+After the stack starts, verify readiness:
+
+```bash
+docker compose exec app php artisan migrate --seed
+docker compose exec app php artisan gateway:readiness
+```
+
+A readiness exit code of `0` means the configured provider is healthy, eligible for production traffic, and both the configured chat and embedding models are installed.
+
+You can also inspect:
+
+```text
+GET http://localhost:8080/api/gateway/v1/health
+```
+
+## Non-Docker local development
+
+If Ollama is already installed on the host:
+
+```bash
+ollama pull llama3.2:3b
+ollama pull embeddinggemma
+
 composer install
 npm install
+cp .env.example .env
+php artisan key:generate
 php artisan migrate --seed
 npm run build
+php artisan gateway:readiness
 php artisan serve
 ```
+
+The default `.env.example` uses `http://localhost:11434/api` for non-containerized Ollama. Docker overrides this with `http://ollama:11434/api`.
 
 ## Default administrator
 
 - Email: `admin@vip.local`
 - Password: `password`
 
-Override these with `VIP_ADMIN_NAME`, `VIP_ADMIN_EMAIL`, and `VIP_ADMIN_PASSWORD`.
+Override these with `VIP_ADMIN_NAME`, `VIP_ADMIN_EMAIL`, and `VIP_ADMIN_PASSWORD` before any shared or production deployment.
 
-## Docker
+## Gateway API
 
-```bash
-docker compose up --build
-```
+Primary capability endpoints:
 
-The app is exposed at `http://localhost:8080`.
+- `POST /api/gateway/v1/chat`
+- `POST /api/gateway/v1/summarise`
+- `POST /api/gateway/v1/report`
+- `POST /api/gateway/v1/translate`
+- `POST /api/gateway/v1/classify`
+- `POST /api/gateway/v1/search`
+- `POST /api/gateway/v1/action`
+
+The remaining productization priority is to integrate the first real VMT ERP through this contract and prove a non-mocked end-to-end request against the local runtime.

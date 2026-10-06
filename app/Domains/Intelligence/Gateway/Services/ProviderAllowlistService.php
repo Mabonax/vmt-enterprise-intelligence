@@ -16,8 +16,15 @@ class ProviderAllowlistService
             throw new AuthorizationException("Provider [{$providerKey}] is not allowlisted for this gateway.");
         }
 
+        $stubProviders = collect(config('gateway.stub_providers', []));
+        $allowStubProviders = (bool) config('gateway.allow_stub_providers', false);
+
+        if (! $allowStubProviders && $stubProviders->contains($providerKey)) {
+            throw new AuthorizationException("Provider [{$providerKey}] is scaffold-only and cannot be used for production gateway traffic.");
+        }
+
         $cloudEnabled = (bool) config('gateway.cloud_providers_enabled', false);
-        $localProviders = collect(config('gateway.local_providers', ['ollama', 'lmstudio']));
+        $localProviders = collect(config('gateway.local_providers', ['ollama']));
 
         if (! $cloudEnabled && ! $localProviders->contains($providerKey)) {
             throw new AuthorizationException("Provider [{$providerKey}] is blocked by the local-first egress policy.");

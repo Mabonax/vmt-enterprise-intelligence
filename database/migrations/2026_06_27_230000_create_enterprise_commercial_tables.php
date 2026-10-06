@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('intelligence_packages', function (Blueprint $table): void {
+        $this->createTableIfMissing('intelligence_packages', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_features', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_features', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->string('feature_key');
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_limits', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_limits', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->string('limit_key');
@@ -53,7 +53,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_entitlements', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_entitlements', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->string('entitlement_key');
@@ -63,7 +63,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_module_accesses', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_module_accesses', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->string('module_key');
@@ -72,7 +72,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_pricing_rules', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_pricing_rules', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->string('billing_frequency')->default('monthly');
@@ -83,7 +83,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('package_upgrade_paths', function (Blueprint $table): void {
+        $this->createTableIfMissing('package_upgrade_paths', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('from_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
             $table->foreignUuid('to_package_id')->constrained('intelligence_packages')->cascadeOnDelete();
@@ -94,7 +94,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('intelligence_tenants', function (Blueprint $table): void {
+        $this->createTableIfMissing('intelligence_tenants', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
@@ -108,7 +108,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_workspaces', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_workspaces', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('workspace_key');
@@ -118,7 +118,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_provisioning_requests', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_provisioning_requests', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->foreignUuid('intelligence_package_id')->nullable()->constrained('intelligence_packages')->nullOnDelete();
@@ -132,9 +132,9 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_provisioning_checklists', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_provisioning_checklists', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_provisioning_request_id')->constrained('tenant_provisioning_requests')->cascadeOnDelete();
+            $table->foreignUuid('tenant_provisioning_request_id')->constrained('tenant_provisioning_requests', indexName: 'tenant_checklist_request_fk')->cascadeOnDelete();
             $table->string('task_key');
             $table->string('label');
             $table->string('status')->default('pending');
@@ -144,7 +144,15 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_environments', function (Blueprint $table): void {
+        if (! collect(Schema::getForeignKeys('tenant_provisioning_checklists'))->contains(
+            fn (array $key): bool => $key['columns'] === ['tenant_provisioning_request_id']
+        )) {
+            Schema::table('tenant_provisioning_checklists', function (Blueprint $table): void {
+                $table->foreign('tenant_provisioning_request_id', 'tenant_checklist_request_fk')
+                    ->references('id')->on('tenant_provisioning_requests')->cascadeOnDelete();
+            });
+        }
+        $this->createTableIfMissing('tenant_environments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('environment_name');
@@ -155,7 +163,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_domains', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_domains', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('domain');
@@ -166,7 +174,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_branding_profiles', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_branding_profiles', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->unique()->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('brand_name')->nullable();
@@ -177,7 +185,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_security_profiles', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_security_profiles', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->unique()->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('policy_level')->nullable();
@@ -188,7 +196,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_data_residency_profiles', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_data_residency_profiles', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->unique()->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('jurisdiction')->nullable();
@@ -198,7 +206,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('tenant_deployment_profiles', function (Blueprint $table): void {
+        $this->createTableIfMissing('tenant_deployment_profiles', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->unique()->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('deployment_mode')->nullable();
@@ -208,7 +216,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('billing_accounts', function (Blueprint $table): void {
+        $this->createTableIfMissing('billing_accounts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->string('account_name');
@@ -220,7 +228,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('billing_contacts', function (Blueprint $table): void {
+        $this->createTableIfMissing('billing_contacts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('billing_account_id')->constrained('billing_accounts')->cascadeOnDelete();
             $table->string('name');
@@ -232,7 +240,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('payment_instructions', function (Blueprint $table): void {
+        $this->createTableIfMissing('payment_instructions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('billing_account_id')->constrained('billing_accounts')->cascadeOnDelete();
             $table->string('instruction_type');
@@ -242,7 +250,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('intelligence_subscriptions', function (Blueprint $table): void {
+        $this->createTableIfMissing('intelligence_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->foreignUuid('intelligence_package_id')->nullable()->constrained('intelligence_packages')->nullOnDelete();
@@ -257,7 +265,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('subscription_invoices', function (Blueprint $table): void {
+        $this->createTableIfMissing('subscription_invoices', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_subscription_id')->constrained('intelligence_subscriptions')->cascadeOnDelete();
             $table->foreignUuid('billing_account_id')->nullable()->constrained('billing_accounts')->nullOnDelete();
@@ -273,7 +281,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('subscription_invoice_lines', function (Blueprint $table): void {
+        $this->createTableIfMissing('subscription_invoice_lines', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_invoice_id')->constrained('subscription_invoices')->cascadeOnDelete();
             $table->string('line_type');
@@ -285,7 +293,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('usage_meters', function (Blueprint $table): void {
+        $this->createTableIfMissing('usage_meters', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_subscription_id')->constrained('intelligence_subscriptions')->cascadeOnDelete();
             $table->string('meter_key');
@@ -300,7 +308,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('usage_ledger_entries', function (Blueprint $table): void {
+        $this->createTableIfMissing('usage_ledger_entries', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('usage_meter_id')->constrained('usage_meters')->cascadeOnDelete();
             $table->string('entry_type');
@@ -311,7 +319,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('usage_quotas', function (Blueprint $table): void {
+        $this->createTableIfMissing('usage_quotas', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_subscription_id')->constrained('intelligence_subscriptions')->cascadeOnDelete();
             $table->string('quota_key');
@@ -323,7 +331,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('usage_overages', function (Blueprint $table): void {
+        $this->createTableIfMissing('usage_overages', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_subscription_id')->constrained('intelligence_subscriptions')->cascadeOnDelete();
             $table->foreignUuid('usage_meter_id')->nullable()->constrained('usage_meters')->nullOnDelete();
@@ -334,7 +342,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('intelligence_proposals', function (Blueprint $table): void {
+        $this->createTableIfMissing('intelligence_proposals', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->constrained('intelligence_tenants')->cascadeOnDelete();
             $table->foreignUuid('intelligence_package_id')->nullable()->constrained('intelligence_packages')->nullOnDelete();
@@ -350,7 +358,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_package_lines', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_package_lines', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->string('line_label');
@@ -361,7 +369,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_deployment_lines', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_deployment_lines', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->string('line_label');
@@ -371,7 +379,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_service_lines', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_service_lines', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->string('line_label');
@@ -383,7 +391,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_assumptions', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_assumptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->text('assumption');
@@ -392,7 +400,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_risks', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_risks', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->text('risk');
@@ -402,7 +410,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('proposal_approvals', function (Blueprint $table): void {
+        $this->createTableIfMissing('proposal_approvals', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->constrained('intelligence_proposals')->cascadeOnDelete();
             $table->string('approver_name');
@@ -413,7 +421,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('commercial_handovers', function (Blueprint $table): void {
+        $this->createTableIfMissing('commercial_handovers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_proposal_id')->nullable()->constrained('intelligence_proposals')->nullOnDelete();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
@@ -424,7 +432,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('deployment_runbooks', function (Blueprint $table): void {
+        $this->createTableIfMissing('deployment_runbooks', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
             $table->foreignUuid('intelligence_proposal_id')->nullable()->constrained('intelligence_proposals')->nullOnDelete();
@@ -436,7 +444,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('deployment_steps', function (Blueprint $table): void {
+        $this->createTableIfMissing('deployment_steps', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('deployment_runbook_id')->constrained('deployment_runbooks')->cascadeOnDelete();
             $table->string('step_key');
@@ -448,7 +456,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('deployment_evidences', function (Blueprint $table): void {
+        $this->createTableIfMissing('deployment_evidences', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('deployment_runbook_id')->nullable()->constrained('deployment_runbooks')->nullOnDelete();
             $table->foreignUuid('deployment_step_id')->nullable()->constrained('deployment_steps')->nullOnDelete();
@@ -459,7 +467,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('support_plans', function (Blueprint $table): void {
+        $this->createTableIfMissing('support_plans', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
             $table->foreignUuid('intelligence_package_id')->nullable()->constrained('intelligence_packages')->nullOnDelete();
@@ -470,7 +478,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('support_tickets', function (Blueprint $table): void {
+        $this->createTableIfMissing('support_tickets', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
             $table->foreignUuid('support_plan_id')->nullable()->constrained('support_plans')->nullOnDelete();
@@ -485,7 +493,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('support_slas', function (Blueprint $table): void {
+        $this->createTableIfMissing('support_slas', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('support_plan_id')->nullable()->constrained('support_plans')->nullOnDelete();
             $table->string('name');
@@ -495,7 +503,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('support_escalations', function (Blueprint $table): void {
+        $this->createTableIfMissing('support_escalations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('support_ticket_id')->nullable()->constrained('support_tickets')->nullOnDelete();
             $table->string('escalation_level');
@@ -505,7 +513,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('maintenance_windows', function (Blueprint $table): void {
+        $this->createTableIfMissing('maintenance_windows', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
             $table->string('title');
@@ -516,7 +524,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('release_readiness_checks', function (Blueprint $table): void {
+        $this->createTableIfMissing('release_readiness_checks', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('intelligence_tenant_id')->nullable()->constrained('intelligence_tenants')->nullOnDelete();
             $table->foreignUuid('deployment_runbook_id')->nullable()->constrained('deployment_runbooks')->nullOnDelete();
@@ -527,6 +535,13 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
+    }
+
+    private function createTableIfMissing(string $name, callable $definition): void
+    {
+        if (! Schema::hasTable($name)) {
+            Schema::create($name, $definition);
+        }
     }
 
     public function down(): void

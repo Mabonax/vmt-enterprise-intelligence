@@ -39,7 +39,7 @@ class OllamaProvider implements AiProvider, TokenCounter
             'tools' => $request->metadata['tools'] ?? null,
             'format' => $request->metadata['format'] ?? null,
             'keep_alive' => $request->metadata['keep_alive'] ?? config('intelligence.providers.ollama.keep_alive'),
-            'options' => $request->metadata['options'] ?? [],
+            'options' => (object) array_replace((array) config('intelligence.providers.ollama.options', []), $request->metadata['options'] ?? []),
         ]);
 
         $payload = $this->decode($response);
@@ -85,7 +85,7 @@ class OllamaProvider implements AiProvider, TokenCounter
                 'tools' => $request->metadata['tools'] ?? null,
                 'format' => $request->metadata['format'] ?? null,
                 'keep_alive' => $request->metadata['keep_alive'] ?? config('intelligence.providers.ollama.keep_alive'),
-                'options' => $request->metadata['options'] ?? [],
+                'options' => (object) array_replace((array) config('intelligence.providers.ollama.options', []), $request->metadata['options'] ?? []),
             ]);
 
         if ($response->failed()) {
@@ -250,8 +250,8 @@ class OllamaProvider implements AiProvider, TokenCounter
     }
 
     /**
-     * @param array<string, mixed> $payload
-     * @param list<ChatMessage> $messages
+     * @param  array<string, mixed>  $payload
+     * @param  list<ChatMessage>  $messages
      */
     private function usageFromPayload(array $payload, array $messages, string $content): UsageStatistics
     {
@@ -271,7 +271,7 @@ class OllamaProvider implements AiProvider, TokenCounter
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return list<ToolCall>
      */
     private function toolCallsFromPayload(array $payload): array

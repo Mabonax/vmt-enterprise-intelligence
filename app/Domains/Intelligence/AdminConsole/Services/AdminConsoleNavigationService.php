@@ -21,6 +21,7 @@ final class AdminConsoleNavigationService
             ['label' => 'Audit Timeline', 'route' => 'intelligence.admin-console.audit', 'slug' => 'intelligence-admin-console-audit', 'description' => 'Searchable audit timeline for administrative state changes and responses.', 'group' => 'intelligence'],
             ['label' => 'Platform Health', 'route' => 'intelligence.admin-console.health', 'slug' => 'intelligence-admin-console-health', 'description' => 'Cross-domain health snapshots, scores, degraded areas, and recommendations.', 'group' => 'intelligence'],
             ['label' => 'Readiness', 'route' => 'intelligence.admin-console.readiness', 'slug' => 'intelligence-admin-console-readiness', 'description' => 'Commercial, deployment, support, compliance, and monitoring readiness posture.', 'group' => 'intelligence'],
+            ['label' => 'Connected Applications', 'route' => 'intelligence.admin-console.connected-applications.index', 'slug' => 'intelligence-admin-console-connected-applications', 'description' => 'Register ERP clients, constrain gateway capabilities, and manage credentials.', 'group' => 'intelligence'],
         ];
     }
 }
