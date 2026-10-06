@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'default_provider' => env('AI_PROVIDER', 'ollama'),
-    'default_model' => env('AI_MODEL', 'runtime-placeholder'),
+    'default_model' => env('AI_MODEL', 'llama3.2:3b'),
     'default_agent' => env('AI_DEFAULT_AGENT', ''),
     'timeout' => (int) env('AI_TIMEOUT', 30),
     'streaming' => [
@@ -55,8 +55,8 @@ return [
             'default_strategy' => env('AI_KNOWLEDGE_CHUNKING', 'paragraph'),
         ],
         'embeddings' => [
-            'provider' => env('AI_KNOWLEDGE_EMBEDDINGS_PROVIDER', 'internal'),
-            'model' => env('AI_KNOWLEDGE_EMBEDDINGS_MODEL', 'hash-vector-v1'),
+            'provider' => env('AI_KNOWLEDGE_EMBEDDINGS_PROVIDER', 'ollama'),
+            'model' => env('AI_KNOWLEDGE_EMBEDDINGS_MODEL', 'embeddinggemma'),
         ],
     ],
     'prompt_registry' => [
@@ -65,7 +65,7 @@ return [
     'model_routing' => [
         'fallback' => [
             'provider' => env('AI_FALLBACK_PROVIDER', 'ollama'),
-            'model' => env('AI_FALLBACK_MODEL', 'runtime-placeholder'),
+            'model' => env('AI_FALLBACK_MODEL', 'llama3.2:3b'),
         ],
     ],
     'approval' => [
@@ -93,7 +93,7 @@ return [
         ],
         'anthropic' => ['enabled' => (bool) env('AI_PROVIDER_ANTHROPIC_ENABLED', false)],
         'gemini' => ['enabled' => (bool) env('AI_PROVIDER_GEMINI_ENABLED', false)],
-        'lmstudio' => ['enabled' => (bool) env('AI_PROVIDER_LMSTUDIO_ENABLED', true)],
+        'lmstudio' => ['enabled' => (bool) env('AI_PROVIDER_LMSTUDIO_ENABLED', false)],
     ],
     'discovered' => [
         'providers' => [],
