@@ -11,6 +11,7 @@ use App\Domains\Intelligence\Security\DTOs\AuthenticatedGatewayClientData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Gateway\GatewayCapabilityRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class GatewayController extends Controller
 {
@@ -54,8 +55,24 @@ class GatewayController extends Controller
         return $this->handleCapability($request, 'action');
     }
 
-    public function show(GatewayRequestModel $gatewayRequest): JsonResponse
+    public function show(Request $request, GatewayRequestModel $gatewayRequest): JsonResponse
     {
+        /** @var AuthenticatedGatewayClientData|null $context */
+        $context = $request->attributes->get('gateway.auth');
+
+        // Request IDs must not allow cross-client or cross-organization access.
+        abort_unless($context instanceof AuthenticatedGatewayClientData, 403);
+        abort_unless(
+            (string) $gatewayRequest->organization_id === $context->organizationId
+            && (
+                $context->clientId() !== null
+                    ? (string) $gatewayRequest->gateway_client_id === (string) $context->clientId()
+                    : ($context->legacyErp !== null
+                        && (string) $gatewayRequest->connected_erp_id === (string) $context->legacyErp->getKey())
+            ),
+            404
+        );
+
         return response()->json([
             'request' => [
                 'id' => $gatewayRequest->getKey(),

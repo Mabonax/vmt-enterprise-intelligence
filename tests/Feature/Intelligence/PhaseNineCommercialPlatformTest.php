@@ -18,6 +18,7 @@ class PhaseNineCommercialPlatformTest extends TestCase
 
     public function test_phase_nine_commercial_api_end_to_end_workflow_operates(): void
     {
+        config()->set('deployment.commercial_console_enabled', true);
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 

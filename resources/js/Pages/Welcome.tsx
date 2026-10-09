@@ -19,18 +19,18 @@ export default function Welcome({
                     <ApplicationMark />
                     <p className="vip-eyebrow">VMT Enterprise AI Gateway</p>
                     <h1 className="vip-landing__title">
-                        Governed intelligence for every enterprise application.
+                        Your ERP. Your AI. Your infrastructure.
                     </h1>
                     <p className="vip-landing__description">
-                        Connect enterprise applications to approved local or cloud AI
-                        runtimes through one secure gateway. Control capabilities,
-                        enforce tenant boundaries, and trace every request.
+                        A dedicated, VMT-managed intelligence service deployed alongside your ERP.
+                        Connect approved AI models, protect enterprise knowledge,
+                        and audit every request—without public self-service accounts.
                     </p>
                     <div className="vip-landing__actions">
                         {canLogin && <Link href={route('login')} className="vip-button">Open command center</Link>}
                         {canRegister && (
                             <Link href={route('register')} className="vip-button vip-button--ghost">
-                                Request access
+                                Create operator account
                             </Link>
                         )}
                     </div>

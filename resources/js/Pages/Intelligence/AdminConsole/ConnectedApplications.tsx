@@ -19,6 +19,16 @@ type Props = {
     organizations: Array<{ id: string; name: string; code: string }>;
     defaults: { provider: string; model: string; capabilities: string[] };
     routes: { storeOrganization: string; storeTenant: string; storeClient: string; issueKey: string; revokeKey: string };
+    deployment: {
+        mode: string;
+        operator: string;
+        organization_registered: boolean;
+        erp_connected: boolean;
+        gateway: {
+            readiness?: { ready?: boolean; checks?: Record<string, boolean> };
+            runtime?: { provider?: string; default_model?: string; embedding_model?: string };
+        };
+    };
     flash?: { status?: string | null; gatewayCredential?: Record<string, string | number | null> | null };
 };
 
@@ -77,6 +87,46 @@ export default function ConnectedApplications(props: Props) {
             <Head title={props.page.title} />
 
             <div className="space-y-6">
+                <section className="rounded-3xl border border-zinc-800 bg-zinc-950/60 p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p className="vip-eyebrow">VMT-managed installation</p>
+                            <h2 className="mt-2 text-xl font-semibold text-zinc-100">Dedicated ERP setup</h2>
+                            <p className="mt-2 text-sm text-zinc-400">
+                                Provision one customer environment, connect its ERP and verify the configured AI runtime.
+                                Production handover requires real end-to-end inference and audit verification.
+                            </p>
+                        </div>
+                        <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-300">
+                            {props.deployment.mode} · {props.deployment.operator}
+                        </span>
+                    </div>
+                    <div className="mt-5 grid gap-3 md:grid-cols-4">
+                        {[
+                            ['1. Organization', props.deployment.organization_registered],
+                            ['2. Gateway tenant', props.tenants.length > 0],
+                            ['3. Connected ERP', props.deployment.erp_connected],
+                            ['4. Local AI ready', props.deployment.gateway.readiness?.ready === true],
+                        ].map(([label, ready]) => (
+                            <div key={String(label)} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+                                <p className="text-xs text-zinc-400">{label}</p>
+                                <p className={ready ? 'mt-2 text-sm font-semibold text-emerald-300' : 'mt-2 text-sm font-semibold text-amber-300'}>
+                                    {ready ? 'Ready' : 'Action required'}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-4 text-xs text-zinc-500">
+                        Runtime: {props.deployment.gateway.runtime?.provider ?? 'Unavailable'} · Chat model: {props.deployment.gateway.runtime?.default_model ?? 'Not detected'} · Embeddings: {props.deployment.gateway.runtime?.embedding_model ?? 'Not detected'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {Object.entries(props.deployment.gateway.readiness?.checks ?? {}).map(([check, passed]) => (
+                            <span key={check} className={passed ? 'rounded-full border border-emerald-500/30 px-2 py-1 text-xs text-emerald-300' : 'rounded-full border border-amber-500/30 px-2 py-1 text-xs text-amber-300'}>
+                                {check.replaceAll('_', ' ')}: {passed ? 'passed' : 'blocked'}
+                            </span>
+                        ))}
+                    </div>
+                </section>
                 {props.flash?.status && (
                     <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
                         {props.flash.status}

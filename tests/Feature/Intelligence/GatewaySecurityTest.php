@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Intelligence;
 
+use App\Domains\Intelligence\Gateway\Models\GatewayRequest;
 use App\Domains\Intelligence\Security\Enums\GatewayAuthMethod;
 use App\Domains\Intelligence\Security\Models\GatewayClient;
 use App\Domains\Intelligence\Security\Models\GatewayScope;
@@ -32,6 +33,81 @@ class GatewaySecurityTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.0.id', $adminClient->getKey());
+    }
+
+    public function test_gateway_request_history_is_restricted_to_owning_client(): void
+    {
+        [$organizationId, $tenant, $client, $apiKey] = $this->provisionGatewayClient(
+            scopes: ['chat'], capabilities: ['chat']
+        );
+
+        $own = GatewayRequest::query()->create([
+            'organization_id' => $organizationId,
+            'gateway_tenant_id' => $tenant->getKey(),
+            'gateway_client_id' => $client->getKey(),
+            'auth_method' => 'api_key',
+            'capability' => 'chat',
+            'status' => 'completed',
+            'correlation_id' => 'history-own',
+        ]);
+
+        [$foreignOrganization, $foreignTenant, $foreignClient] = $this->provisionGatewayClient(
+            scopes: ['chat'], capabilities: ['chat']
+        );
+
+        $foreign = GatewayRequest::query()->create([
+            'organization_id' => $foreignOrganization,
+            'gateway_tenant_id' => $foreignTenant->getKey(),
+            'gateway_client_id' => $foreignClient->getKey(),
+            'auth_method' => 'api_key',
+            'capability' => 'chat',
+            'status' => 'completed',
+            'correlation_id' => 'history-foreign',
+        ]);
+
+        $this->withToken($apiKey)
+            ->getJson(route('api.gateway.requests.show', ['gatewayRequest' => $own->getKey()]))
+            ->assertOk()
+            ->assertJsonPath('request.id', $own->getKey());
+
+        $this->withToken($apiKey)
+            ->getJson(route('api.gateway.requests.show', ['gatewayRequest' => $foreign->getKey()]))
+            ->assertNotFound();
+    }
+
+    public function test_gateway_request_history_is_restricted_within_same_tenant(): void
+    {
+        [$organizationId, $tenant, $client, $apiKey] = $this->provisionGatewayClient(
+            scopes: ['chat'], capabilities: ['chat']
+        );
+
+        $otherClient = GatewayClient::query()->create([
+            'id' => (string) Str::uuid(),
+            'gateway_tenant_id' => $tenant->getKey(),
+            'organization_id' => $organizationId,
+            'client_type' => 'erp',
+            'name' => 'Other ERP',
+            'status' => 'active',
+            'environment' => 'production',
+            'enabled_capabilities' => ['chat'],
+            'enabled_providers' => ['ollama'],
+            'enabled_models' => ['llama3.2:3b'],
+            'metadata' => [],
+        ]);
+
+        $foreign = GatewayRequest::query()->create([
+            'organization_id' => $organizationId,
+            'gateway_tenant_id' => $tenant->getKey(),
+            'gateway_client_id' => $otherClient->getKey(),
+            'auth_method' => 'api_key',
+            'capability' => 'chat',
+            'status' => 'completed',
+            'correlation_id' => 'history-other-client',
+        ]);
+
+        $this->withToken($apiKey)
+            ->getJson(route('api.gateway.requests.show', ['gatewayRequest' => $foreign->getKey()]))
+            ->assertNotFound();
     }
 
     public function test_hmac_requests_are_authenticated_and_replay_attacks_are_blocked(): void

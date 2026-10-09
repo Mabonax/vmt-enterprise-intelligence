@@ -41,6 +41,7 @@ class SemanticSearchServiceTest extends TestCase
             'quality_score' => 0.76,
             'version' => 1,
             'checksum' => sha1('guide'),
+            'metadata' => ['organization_id' => 'org-a'],
         ]);
 
         $chunk = KnowledgeChunk::query()->create([
@@ -69,6 +70,7 @@ class SemanticSearchServiceTest extends TestCase
 
         $results = app(SemanticSearchService::class)->search(new KnowledgeSearchQueryData(
             query: 'customer onboarding workflow',
+            filters: ['organization_id' => 'org-a'],
             limit: 5,
         ));
 

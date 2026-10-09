@@ -35,9 +35,12 @@ class KnowledgeController extends Controller
 
     public function search(KnowledgeSearchRequest $request): JsonResponse
     {
+        $organizationId = $request->user()?->organization_id;
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403, 'Organization context required.');
+
         $results = $this->search->search(new KnowledgeSearchQueryData(
             query: (string) $request->string('query'),
-            filters: $request->input('filters', []),
+            filters: array_merge($request->input('filters', []), ['organization_id' => $organizationId]),
             limit: (int) $request->integer('limit', 8),
             workspace: (string) $request->string('workspace', 'intelligence'),
         ));
@@ -56,13 +59,19 @@ class KnowledgeController extends Controller
 
     public function upload(KnowledgeIngestionRequest $request): JsonResponse
     {
+        $organizationId = $request->user()?->organization_id;
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403, 'Organization context required.');
+
         $document = $this->lifecycle->ingest(
             new KnowledgeIngestionData(
                 title: (string) $request->string('title'),
                 content: (string) $request->string('content'),
                 sourceType: (string) $request->string('source_type'),
                 mimeType: (string) $request->string('mime_type'),
-                metadata: $request->input('metadata', []),
+                metadata: array_merge($request->input('metadata', []), [
+                    'organization_id' => $organizationId,
+                    'visibility' => 'organization',
+                ]),
             ),
             (string) $request->string('workspace', 'intelligence'),
         );
@@ -74,48 +83,56 @@ class KnowledgeController extends Controller
 
     public function graph(Request $request): JsonResponse
     {
-        return response()->json([
-            'nodes' => \App\Domains\Intelligence\Knowledge\Models\KnowledgeGraphNode::query()->limit(50)->get(),
-            'edges' => \App\Domains\Intelligence\Knowledge\Models\KnowledgeGraphEdge::query()->limit(100)->get(),
-        ]);
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 
     public function memories(Request $request): JsonResponse
     {
+        $organizationId = $request->user()?->organization_id;
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403);
+
         return response()->json([
-            'memories' => KnowledgeMemory::query()->latest()->limit(25)->get(),
+            'memories' => KnowledgeMemory::query()
+                ->where('tenant_id', $organizationId)
+                ->where('visibility', 'organization')
+                ->latest()->limit(25)->get(),
         ]);
     }
 
     public function relationships(Request $request): JsonResponse
     {
-        return response()->json([
-            'relationships' => KnowledgeRelationship::query()->latest()->limit(50)->get(),
-        ]);
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 
     public function learningMetrics(Request $request): JsonResponse
     {
-        return response()->json([
-            'learning' => KnowledgeLearningCycle::query()->latest()->limit(25)->get(),
-            'feedback' => KnowledgeFeedback::query()->latest()->limit(25)->get(),
-        ]);
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 
     public function analytics(Request $request): JsonResponse
     {
-        return response()->json($this->analytics->summary());
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 
     public function embeddingStatus(Request $request): JsonResponse
     {
-        return response()->json([
-            'embeddings' => KnowledgeEmbedding::query()->latest()->limit(25)->get(),
-        ]);
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 
     public function health(Request $request): JsonResponse
     {
-        return response()->json($this->health->summary());
+        // Global graph and analytics tables have no enforceable organization scope yet.
+        // Deny rather than expose another deployment's knowledge metadata.
+        abort(403, 'Organization-scoped knowledge explorer is not yet available.');
     }
 }

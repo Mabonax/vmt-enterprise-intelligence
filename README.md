@@ -1,6 +1,6 @@
 # VMT Enterprise AI Gateway
 
-VMT Enterprise AI Gateway is the centralized, provider-agnostic AI integration layer for VMT ERP systems.
+VMT Enterprise AI Gateway is the centralized, provider-agnostic AI integration layer deployed and managed by VMT alongside its ERP systems. It is not a public, self-service SaaS product.
 
 The product boundary is deliberate:
 
@@ -9,6 +9,12 @@ The product boundary is deliberate:
 - AI runtimes such as Ollama perform inference.
 - Local AI is the default deployment model.
 - Cloud providers remain optional and disabled by default.
+
+## Dedicated deployment model
+
+Each customer receives a dedicated Gateway deployment with its own operational database and approved local AI runtime. One deployment may serve multiple explicitly connected ERPs for that customer. ERP staff use AI inside their ERP, while VMT technical operators administer the Gateway console. Public user registration and commercial-console navigation are disabled by default.
+
+See [Dedicated ERP Deployment Contract](docs/dedicated-erp-deployment.md) for provisioning responsibilities, acceptance criteria, and security boundaries.
 
 ## Current materialization status
 

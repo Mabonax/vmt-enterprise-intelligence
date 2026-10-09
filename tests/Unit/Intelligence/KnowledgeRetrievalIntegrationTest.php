@@ -40,6 +40,7 @@ class KnowledgeRetrievalIntegrationTest extends TestCase
             'quality_score' => 0.82,
             'version' => 1,
             'checksum' => sha1('policy'),
+            'metadata' => ['organization_id' => 'org-a'],
         ]);
 
         $chunk = KnowledgeChunk::query()->create([
@@ -72,6 +73,7 @@ class KnowledgeRetrievalIntegrationTest extends TestCase
             'summary' => 'Use the onboarding policy for approvals',
             'content' => 'Use the onboarding policy for approvals and workflow routing.',
             'visibility' => 'organization',
+            'tenant_id' => 'org-a',
             'classification' => 'internal',
             'importance' => 0.80,
             'confidence' => 0.84,
@@ -81,6 +83,7 @@ class KnowledgeRetrievalIntegrationTest extends TestCase
 
         $context = app(ContextAssembler::class)->assemble(
             systemPrompt: 'Runtime',
+            manualContext: ['organization_id' => 'org-a'],
             userPrompt: 'Find the onboarding policy workflow',
         );
 

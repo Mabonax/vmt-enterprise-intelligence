@@ -205,8 +205,9 @@ class ErpGatewayService
             }
         }
 
-        [$provider, $activeProvider, $activeModel] = $this->resolveProviderWithFallback($route);
-        $chatResponse = $provider->chat(new ChatRequest(
+        try {
+            [$provider, $activeProvider, $activeModel] = $this->resolveProviderWithFallback($route);
+            $chatResponse = $provider->chat(new ChatRequest(
             provider: ProviderType::tryFrom($activeProvider) ?? ProviderType::Ollama,
             model: $activeModel,
             messages: array_map(
@@ -220,7 +221,33 @@ class ErpGatewayService
                 'tools' => $request->allowActions() ? $resolvedTools : [],
                 'gateway_request_id' => $gatewayRequest->getKey(),
             ],
-        ));
+            ));
+        } catch (\Throwable $exception) {
+            $failureReason = substr($exception::class, 0, 200);
+            $gatewayRequest->forceFill([
+                'status' => 'failed',
+                'failure_reason' => $failureReason,
+                'completed_at' => now(),
+            ])->save();
+            $trace->forceFill([
+                'status' => 'failed',
+                'completion_reason' => 'provider_error',
+                'iterations' => 1,
+            ])->save();
+            $plan->forceFill([
+                'status' => 'failed',
+                'completion_state' => 'failed',
+                'attempts' => 1,
+            ])->save();
+            $this->audit->record($context, $gatewayRequest, 'gateway.request.failed', [
+                'reason' => $failureReason,
+            ]);
+            $this->events->log('gateway.request.failed', $httpRequest, $context, 502, null, [
+                'gateway_request_id' => $gatewayRequest->getKey(),
+            ]);
+
+            throw $exception;
+        }
 
         $verification = $this->verification->verify($trace, $stepPayloads, $toolResults);
         $providerProfile = AiProviderProfile::query()->firstWhere('provider_key', $activeProvider);

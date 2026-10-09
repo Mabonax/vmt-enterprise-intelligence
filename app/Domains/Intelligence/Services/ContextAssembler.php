@@ -126,7 +126,7 @@ class ContextAssembler
             $knowledge = $this->knowledgeRetrieval->retrieveForPrompt(
                 prompt: $userPrompt,
                 filters: [
-                    'organization_id' => $user?->organization_id,
+                    'organization_id' => $user?->organization_id ?? ($manualContext['organization_id'] ?? null),
                     'workspace' => 'intelligence',
                 ],
                 limit: (int) config('intelligence.knowledge.retrieval.default_limit', 5),

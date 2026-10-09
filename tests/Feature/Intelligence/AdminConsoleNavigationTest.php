@@ -17,7 +17,7 @@ class AdminConsoleNavigationTest extends TestCase
         $items = collect(VipNavigation::items());
 
         $this->assertTrue($items->contains(fn (array $item): bool => $item['route'] === 'intelligence.admin-console.index'));
-        $this->assertTrue($items->contains(fn (array $item): bool => $item['route'] === 'intelligence.commercial.packages'));
+        $this->assertFalse($items->contains(fn (array $item): bool => $item['route'] === 'intelligence.commercial.packages'));
         $this->assertTrue($items->contains(fn (array $item): bool => $item['route'] === 'intelligence.operations.executive-dashboard'));
     }
 }

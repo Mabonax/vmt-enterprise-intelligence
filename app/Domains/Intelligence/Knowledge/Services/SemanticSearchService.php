@@ -26,8 +26,26 @@ class SemanticSearchService
     {
         $startedAt = microtime(true);
         $needleVector = $this->embeddings->generate($query->query)['vector'];
-        $documents = KnowledgeDocument::query()->limit(50)->get();
-        $memories = KnowledgeMemory::query()->limit(50)->get();
+        // ERP-supplied organization context is mandatory for cross-system retrieval.
+        // Fail closed: untagged or privately scoped records must never enter ERP prompts.
+        $organizationId = $query->filters['organization_id'] ?? null;
+        if (is_string($organizationId) && $organizationId !== '') {
+            $documents = KnowledgeDocument::query()
+                ->where('metadata->organization_id', $organizationId)
+                ->where('visibility', 'organization')
+                ->limit(50)->get();
+            $memories = KnowledgeMemory::query()
+                ->where(function ($builder) use ($organizationId): void {
+                    $builder->where('tenant_id', $organizationId)
+                        ->orWhere('metadata->organization_id', $organizationId);
+                })
+                ->where('visibility', 'organization')
+                ->limit(50)->get();
+        } else {
+            // Unscoped searches cannot silently gain access to tenant data.
+            $documents = collect();
+            $memories = collect();
+        }
         $results = [];
 
         foreach ($documents as $document) {

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Intelligence;
 
 use App\Domains\Connections\Services\OrganizationRegistrationService;
 use App\Domains\Intelligence\Security\Enums\GatewayAuthMethod;
+use App\Domains\Intelligence\Gateway\Services\GatewayHealthService;
 use App\Domains\Intelligence\Security\Models\GatewayClient;
 use App\Domains\Intelligence\Security\Models\GatewayTenant;
 use App\Domains\Intelligence\Security\Services\GatewayClientProvisioningService;
@@ -22,6 +23,7 @@ class ConnectedApplicationsController extends Controller
 {
     public function __construct(
         private readonly GatewayClientProvisioningService $provisioning,
+        private readonly GatewayHealthService $health,
     ) {}
 
     public function index(Request $request): Response
@@ -88,6 +90,13 @@ class ConnectedApplicationsController extends Controller
                     'code' => (string) ($organization->code ?? ''),
                 ])
                 ->values(),
+            'deployment' => [
+                'mode' => (string) config('deployment.mode', 'dedicated'),
+                'operator' => (string) config('deployment.managed_by', 'VMT'),
+                'gateway' => $this->health->status(),
+                'organization_registered' => DB::table('organizations')->exists(),
+                'erp_connected' => GatewayClient::query()->where('status', 'active')->exists(),
+            ],
             'defaults' => [
                 'provider' => (string) config('intelligence.default_provider'),
                 'model' => (string) config('intelligence.default_model'),
