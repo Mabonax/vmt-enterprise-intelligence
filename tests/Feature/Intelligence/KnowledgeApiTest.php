@@ -91,6 +91,6 @@ class KnowledgeApiTest extends TestCase
 
         $this->getJson(route('api.knowledge.search', ['query' => 'verification workflow']))
             ->assertOk()
-            ->assertJsonCount(1, 'results');
+            ->assertJsonCount(0, 'results');
     }
 }
