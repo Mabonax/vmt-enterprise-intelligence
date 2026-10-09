@@ -42,7 +42,7 @@ class KnowledgeApiTest extends TestCase
 
     public function test_knowledge_search_endpoint_returns_results(): void
     {
-        $user = User::factory()->create();
+        $user = $this->organizationUser();
         Sanctum::actingAs($user);
 
         $source = KnowledgeSource::query()->create([
