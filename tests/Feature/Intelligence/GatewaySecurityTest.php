@@ -51,10 +51,14 @@ class GatewaySecurityTest extends TestCase
             'correlation_id' => 'history-own',
         ]);
 
+        [$foreignOrganization, $foreignTenant, $foreignClient] = $this->provisionGatewayClient(
+            scopes: ['chat'], capabilities: ['chat']
+        );
+
         $foreign = GatewayRequest::query()->create([
-            'organization_id' => (string) Str::uuid(),
-            'gateway_tenant_id' => (string) Str::uuid(),
-            'gateway_client_id' => (string) Str::uuid(),
+            'organization_id' => $foreignOrganization,
+            'gateway_tenant_id' => $foreignTenant->getKey(),
+            'gateway_client_id' => $foreignClient->getKey(),
             'auth_method' => 'api_key',
             'capability' => 'chat',
             'status' => 'completed',
