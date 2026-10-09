@@ -14,6 +14,17 @@ class IntelligenceCommercialDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_legacy_commercial_routes_are_not_available_in_dedicated_mode(): void
+    {
+        config()->set('deployment.commercial_console_enabled', false);
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->get('/intelligence/commercial/packages')->assertNotFound();
+        $this->getJson('/api/intelligence/commercial/packages')->assertNotFound();
+        $this->postJson('/api/intelligence/commercial/subscriptions', [])->assertNotFound();
+    }
+
     public function test_workspace_pages_and_api_endpoints_render_for_commercial_intelligence(): void
     {
         config()->set('deployment.commercial_console_enabled', true);
