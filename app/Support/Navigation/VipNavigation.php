@@ -13,7 +13,7 @@ final class VipNavigation
      */
     public static function items(): array
     {
-        return [
+        $items = [
             ['label' => 'Dashboard', 'route' => 'dashboard', 'slug' => 'dashboard', 'description' => 'Executive command overview for the platform foundation.', 'group' => 'platform'],
             ['label' => 'Intelligence Dashboard', 'route' => 'intelligence.dashboard', 'slug' => 'intelligence-dashboard', 'description' => 'Executive runtime metrics and additive scaffolding for the intelligence core.', 'group' => 'intelligence'],
             ['label' => 'Conversations', 'route' => 'intelligence.conversations', 'slug' => 'intelligence-conversations', 'description' => 'Provider-neutral conversation lifecycle and message persistence seams.', 'group' => 'intelligence'],
@@ -110,6 +110,15 @@ final class VipNavigation
             ['label' => 'System', 'route' => 'platform.system', 'slug' => 'system', 'description' => 'Runtime posture, deployment preparation, and infrastructure extension points.', 'group' => 'platform'],
             ['label' => 'Health', 'route' => 'platform.health', 'slug' => 'health', 'description' => 'Health probes, incident readiness, and operational checkpoints.', 'group' => 'platform'],
         ];
+
+        if (! config('deployment.commercial_console_enabled', false)) {
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => ! str_starts_with($item['route'], 'intelligence.commercial.'),
+            ));
+        }
+
+        return $items;
     }
 
     /**
