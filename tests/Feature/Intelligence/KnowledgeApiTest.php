@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Domains\Intelligence\Knowledge\Models\KnowledgeSource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -19,7 +21,7 @@ class KnowledgeApiTest extends TestCase
     {
         Queue::fake();
 
-        $user = User::factory()->create();
+        $user = $this->organizationUser();
         Sanctum::actingAs($user);
 
         $this->postJson(route('api.knowledge.documents.store'), [
@@ -35,6 +37,7 @@ class KnowledgeApiTest extends TestCase
             'title' => 'Operations Playbook',
             'status' => 'queued',
         ]);
+        $this->assertSame($user->organization_id, \App\Domains\Intelligence\Knowledge\Models\KnowledgeDocument::query()->firstOrFail()->metadata['organization_id']);
     }
 
     public function test_knowledge_search_endpoint_returns_results(): void
@@ -93,4 +96,34 @@ class KnowledgeApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'results');
     }
+    public function test_search_rejects_missing_organization_context(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson(route('api.knowledge.search', ['query' => 'policy']))->assertForbidden();
+        $this->postJson(route('api.knowledge.documents.store'), [
+            'title' => 'Unscoped',
+            'content' => 'Should not be ingested',
+            'source_type' => 'document',
+            'mime_type' => 'text/plain',
+        ])->assertForbidden();
+    }
+
+    private function organizationUser(): User
+    {
+        $id = (string) Str::uuid();
+        DB::table('organizations')->insert([
+            'id' => $id,
+            'name' => 'Knowledge Organization',
+            'slug' => 'knowledge-'.Str::lower(Str::random(6)),
+            'code' => 'KN-'.Str::upper(Str::random(6)),
+            'status' => 'active',
+            'settings' => json_encode([], JSON_UNESCAPED_SLASHES),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return User::factory()->create(['organization_id' => $id]);
+    }
+
 }
