@@ -109,6 +109,28 @@ class KnowledgeApiTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_unscoped_knowledge_explorer_endpoints_fail_closed(): void
+    {
+        Sanctum::actingAs($this->organizationUser());
+
+        foreach ([
+            'api.knowledge.graph',
+            'api.knowledge.relationships',
+            'api.knowledge.learning',
+            'api.knowledge.analytics',
+            'api.knowledge.embeddings',
+            'api.knowledge.health',
+        ] as $routeName) {
+            $this->getJson(route($routeName))->assertForbidden();
+        }
+    }
+
+    public function test_memory_feed_requires_authenticated_organization(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $this->getJson(route('api.knowledge.memories'))->assertForbidden();
+    }
+
     private function organizationUser(): User
     {
         $id = (string) Str::uuid();
