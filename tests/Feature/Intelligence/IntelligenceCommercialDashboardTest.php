@@ -16,6 +16,7 @@ class IntelligenceCommercialDashboardTest extends TestCase
 
     public function test_workspace_pages_and_api_endpoints_render_for_commercial_intelligence(): void
     {
+        config()->set('deployment.commercial_console_enabled', true);
         $user = User::factory()->create();
         $this->seed(IntelligenceCommercialSeeder::class);
 
