@@ -40,3 +40,17 @@ These are feature-gate defaults, not a full installation provisioning implementa
 ## Retained legacy modules
 
 Commercial, subscription and shared-tenant bounded contexts are retained for dependency compatibility and archival development history. They are not part of the default customer delivery or navigation. They must not be interpreted as an invitation for a public signup or shared SaaS tenant marketplace. A follow-up review should disable legacy routes/actions and reclassify relevant deployment/support functions without deleting dependent data.
+
+## Operator CLI commissioning
+
+After database migrations and the first VMT operator account have been securely initialized:
+
+```bash
+php artisan gateway:install --check
+php artisan gateway:install --provision --organization-id=EXISTING_ORGANIZATION_UUID --erp-name=GPERP
+php artisan gateway:install --verify
+```
+
+The provisioning operation requires a pre-existing approved organization UUID and creates a dedicated Gateway tenant and an ERP client, issuing an API key and secret only if that ERP client does not already exist. A repeated run reuses the existing client without printing or generating new credentials. Safeguard the one-time credential output: avoid CI logs, shell history and shared terminals. For credentials issued through the web UI, use the operator-only Connected Applications console.
+
+Check is an environment and database preflight, while verify uses the configured live AI provider to check availability of the required chat and embedding models. Neither replaces an actual authenticated ERP-to-Gateway inference acceptance test. The VMT operator must also verify firewall rules, TLS, backup restoration, separate databases, queues and credential rotation before production handover.
