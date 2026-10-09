@@ -189,7 +189,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/intelligence/operations/autonomy', WorkspaceController::class)
         ->defaults('page', 'intelligence-autonomy-analytics')
         ->name('intelligence.operations.autonomy-analytics');
-    if (config('deployment.commercial_console_enabled', false)) {
+    Route::middleware(\App\Http\Middleware\EnsureCommercialConsoleEnabled::class)->group(function (): void {
     Route::get('/intelligence/commercial/packages', WorkspaceController::class)
         ->defaults('page', 'intelligence-commercial-packages')
         ->name('intelligence.commercial.packages');
@@ -223,7 +223,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/intelligence/commercial/settings', WorkspaceController::class)
         ->defaults('page', 'intelligence-commercial-settings')
         ->name('intelligence.commercial.settings');
-    }
+    });
     Route::get('/intelligence/admin-console', [AdminConsoleController::class, 'index'])->name('intelligence.admin-console.index');
     Route::get('/intelligence/admin-console/executive', [AdminConsoleController::class, 'executive'])->name('intelligence.admin-console.executive');
     Route::get('/intelligence/admin-console/operations', [AdminConsoleController::class, 'operations'])->name('intelligence.admin-console.operations');
