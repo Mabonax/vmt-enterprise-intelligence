@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->prefix('intelligence')->group(function (): vo
     Route::get('/operations/missions/{mission}/decisions', [OperationsController::class, 'decisions'])->name('api.intelligence.operations.decisions');
     Route::post('/operations/missions/{mission}/decisions', [OperationsController::class, 'recordDecision'])->name('api.intelligence.operations.decisions.store');
 
+    if (config('deployment.commercial_console_enabled', false)) {
     Route::get('/commercial/packages', [CommercialController::class, 'packages'])->name('api.intelligence.commercial.packages');
     Route::get('/commercial/tenants', [CommercialController::class, 'tenants'])->name('api.intelligence.commercial.tenants');
     Route::get('/commercial/provisioning', [CommercialController::class, 'provisioning'])->name('api.intelligence.commercial.provisioning');
@@ -94,6 +95,7 @@ Route::middleware('auth:sanctum')->prefix('intelligence')->group(function (): vo
     Route::get('/commercial/readiness', [CommercialController::class, 'readiness'])->name('api.intelligence.commercial.readiness');
     Route::post('/commercial/readiness/{tenant}', [CommercialController::class, 'runReadiness'])->name('api.intelligence.commercial.readiness.run');
 
+    }
     Route::get('/admin-console/dashboard', [AdminConsoleController::class, 'dashboard'])->name('api.intelligence.admin-console.dashboard');
     Route::get('/admin-console/metrics', [AdminConsoleController::class, 'metrics'])->name('api.intelligence.admin-console.metrics');
     Route::get('/admin-console/alerts', [AdminConsoleController::class, 'alerts'])->name('api.intelligence.admin-console.alerts');
