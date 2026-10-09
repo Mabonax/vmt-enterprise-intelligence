@@ -35,9 +35,12 @@ class KnowledgeController extends Controller
 
     public function search(KnowledgeSearchRequest $request): JsonResponse
     {
+        $organizationId = $request->user()?->organization_id;
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403, 'Organization context required.');
+
         $results = $this->search->search(new KnowledgeSearchQueryData(
             query: (string) $request->string('query'),
-            filters: $request->input('filters', []),
+            filters: array_merge($request->input('filters', []), ['organization_id' => $organizationId]),
             limit: (int) $request->integer('limit', 8),
             workspace: (string) $request->string('workspace', 'intelligence'),
         ));
@@ -56,13 +59,19 @@ class KnowledgeController extends Controller
 
     public function upload(KnowledgeIngestionRequest $request): JsonResponse
     {
+        $organizationId = $request->user()?->organization_id;
+        abort_unless(is_string($organizationId) && $organizationId !== '', 403, 'Organization context required.');
+
         $document = $this->lifecycle->ingest(
             new KnowledgeIngestionData(
                 title: (string) $request->string('title'),
                 content: (string) $request->string('content'),
                 sourceType: (string) $request->string('source_type'),
                 mimeType: (string) $request->string('mime_type'),
-                metadata: $request->input('metadata', []),
+                metadata: array_merge($request->input('metadata', []), [
+                    'organization_id' => $organizationId,
+                    'visibility' => 'organization',
+                ]),
             ),
             (string) $request->string('workspace', 'intelligence'),
         );
