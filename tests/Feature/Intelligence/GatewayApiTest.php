@@ -144,6 +144,33 @@ class GatewayApiTest extends TestCase
         ]);
     }
 
+    public function test_failed_inference_does_not_leave_gateway_execution_running(): void
+    {
+        $this->seed(IntelligenceRuntimeSeeder::class);
+        [$organizationId, $erp, $secret] = $this->provisionErp();
+
+        Http::fake(['http://localhost:11434/api/chat' => Http::response(['error' => 'offline'], 500)]);
+
+        $response = $this->withHeaders([
+            'X-ERP-System' => $erp->system_key,
+            'X-ERP-Key' => $secret,
+        ])->postJson(route('api.gateway.chat'), [
+            'organization_id' => $organizationId,
+            'erp_system' => $erp->system_key,
+            'correlation_id' => 'corr-provider-failure',
+            'actor' => ['id' => 'user-42'],
+            'prompt' => 'Summarise this record.',
+        ]);
+
+        $this->assertGreaterThanOrEqual(400, $response->status());
+        $this->assertDatabaseHas('gateway_requests', [
+            'correlation_id' => 'corr-provider-failure',
+            'status' => 'failed',
+        ]);
+        $this->assertDatabaseHas('execution_traces', ['status' => 'failed']);
+        $this->assertDatabaseHas('execution_plans', ['status' => 'failed']);
+    }
+
     public function test_gateway_rejects_invalid_credentials(): void
     {
         [$organizationId, $erp] = $this->provisionErp();
