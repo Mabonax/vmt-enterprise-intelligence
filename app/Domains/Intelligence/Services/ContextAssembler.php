@@ -24,6 +24,7 @@ class ContextAssembler
         array $toolDefinitions = [],
         ?string $userPrompt = null,
         ?User $user = null,
+        bool $retrieveKnowledge = true,
     ): PromptContext {
         $runtimeContext = $this->buildRuntimeContext(
             conversationHistory: $conversationHistory,
@@ -32,6 +33,7 @@ class ContextAssembler
             toolDefinitions: $toolDefinitions,
             userPrompt: $userPrompt,
             user: $user,
+            retrieveKnowledge: $retrieveKnowledge,
         );
 
         return new PromptContext(
@@ -46,8 +48,8 @@ class ContextAssembler
     }
 
     /**
-     * @param list<ChatMessage> $conversationHistory
-     * @param list<array{name: string, description: string, schema: array<string, mixed>}> $toolDefinitions
+     * @param  list<ChatMessage>  $conversationHistory
+     * @param  list<array{name: string, description: string, schema: array<string, mixed>}>  $toolDefinitions
      * @return array<string, mixed>
      */
     private function buildRuntimeContext(
@@ -57,6 +59,7 @@ class ContextAssembler
         array $toolDefinitions,
         ?string $userPrompt,
         ?User $user,
+        bool $retrieveKnowledge,
     ): array {
         $entries = [
             [
@@ -117,7 +120,8 @@ class ContextAssembler
         ];
 
         if (
-            config('intelligence.knowledge.enabled')
+            $retrieveKnowledge
+            && config('intelligence.knowledge.enabled')
             && config('intelligence.knowledge.retrieval.enabled')
             && $userPrompt !== null
             && Schema::hasTable('knowledge_documents')

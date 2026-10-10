@@ -43,6 +43,7 @@ class GatewayCapabilityRequest extends FormRequest
             'options' => ['nullable', 'array'],
             'options.allow_actions' => ['nullable', 'boolean'],
             'options.stream' => ['nullable', 'boolean'],
+            'options.retrieve_knowledge' => ['sometimes', 'boolean'],
             'options.model' => ['nullable', 'string', 'max:191'],
             'options.provider' => ['nullable', 'string', 'max:191'],
         ];
