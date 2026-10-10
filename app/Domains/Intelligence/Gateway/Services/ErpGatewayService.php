@@ -30,6 +30,7 @@ use App\Domains\Intelligence\Services\ToolRegistry;
 use App\Domains\Intelligence\Services\UsageTrackingService;
 use App\Domains\Intelligence\Services\VerificationEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ErpGatewayService
 {
@@ -56,14 +57,14 @@ class ErpGatewayService
         $this->permissions->authorize($context, $request);
         $this->usageEnforcement->enforce($context);
 
-        $knowledge = $this->knowledge->retrieveForPrompt(
+        $knowledge = ($request->options['retrieve_knowledge'] ?? true) ? $this->knowledge->retrieveForPrompt(
             prompt: $request->prompt,
             filters: [
                 'organization_id' => $request->organizationId,
                 'workspace' => 'intelligence',
             ],
             limit: (int) config('intelligence.knowledge.retrieval.default_limit', 5),
-        );
+        ) : ['results' => [], 'summary' => ''];
 
         $resolvedTools = $this->toolDefinitions();
         $requiredTools = $request->allowActions()
@@ -123,6 +124,7 @@ class ErpGatewayService
             toolDefinitions: $request->allowActions() ? $resolvedTools : [],
             userPrompt: $request->prompt,
             user: null,
+            retrieveKnowledge: false,
         );
 
         $route = $this->router->resolve(
@@ -136,7 +138,7 @@ class ErpGatewayService
         $plan = ExecutionPlan::query()->create([
             'conversation_id' => null,
             'agent_id' => null,
-            'objective' => $request->prompt,
+            'objective' => Str::limit($request->prompt, 255, ''),
             'status' => 'running',
             'estimated_complexity' => 'standard',
             'completion_state' => 'open',
@@ -191,6 +193,7 @@ class ErpGatewayService
                     payload: is_array($action['payload'] ?? null) ? $action['payload'] : [],
                     context: new ToolContext(
                         user: null,
+
                         conversation: null,
                         agent: null,
                         memory: [],
@@ -208,19 +211,19 @@ class ErpGatewayService
         try {
             [$provider, $activeProvider, $activeModel] = $this->resolveProviderWithFallback($route);
             $chatResponse = $provider->chat(new ChatRequest(
-            provider: ProviderType::tryFrom($activeProvider) ?? ProviderType::Ollama,
-            model: $activeModel,
-            messages: array_map(
-                static fn (array $message): ChatMessage => new ChatMessage(
-                    role: ChatRole::from($message['role']),
-                    content: $message['content'],
+                provider: ProviderType::tryFrom($activeProvider) ?? ProviderType::Ollama,
+                model: $activeModel,
+                messages: array_map(
+                    static fn (array $message): ChatMessage => new ChatMessage(
+                        role: ChatRole::from($message['role']),
+                        content: $message['content'],
+                    ),
+                    $this->prompts->build($promptContext),
                 ),
-                $this->prompts->build($promptContext),
-            ),
-            metadata: [
-                'tools' => $request->allowActions() ? $resolvedTools : [],
-                'gateway_request_id' => $gatewayRequest->getKey(),
-            ],
+                metadata: [
+                    'tools' => $request->allowActions() ? $resolvedTools : [],
+                    'gateway_request_id' => $gatewayRequest->getKey(),
+                ],
             ));
         } catch (\Throwable $exception) {
             $failureReason = substr($exception::class, 0, 200);
