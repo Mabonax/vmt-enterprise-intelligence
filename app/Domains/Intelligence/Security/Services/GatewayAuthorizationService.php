@@ -17,6 +17,11 @@ class GatewayAuthorizationService
             throw new GatewayAuthorizationException('The gateway client is outside the requested tenant or organization scope.');
         }
 
+        $erpSystem = $context->client?->metadata['erp_system'] ?? $context->legacyErp?->system_key;
+        if (is_string($erpSystem) && $erpSystem !== '' && $erpSystem !== $request->erpSystem) {
+            throw new GatewayAuthorizationException('The gateway client is not authorized for the requested ERP system.');
+        }
+
         $requiredScope = $request->capability;
 
         if ($context->scopes !== [] && ! in_array($requiredScope, $context->scopes, true)) {

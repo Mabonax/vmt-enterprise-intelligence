@@ -78,4 +78,14 @@ class OllamaProviderTest extends TestCase
         $this->assertCount(1, $models);
         $this->assertSame('qwen3:8b', $models[0]['key']);
     }
+
+    public function test_embeddings_honor_cpu_runtime_option(): void
+    {
+        config()->set('intelligence.providers.ollama.endpoint', 'http://localhost:11434/api');
+        config()->set('intelligence.providers.ollama.options', ['num_gpu' => 0, 'num_predict' => 512]);
+        Http::fake(['*/embed' => Http::response(['embeddings' => [[0.1, 0.2]]])]);
+        app(OllamaProvider::class)->embeddings(['Synthetic operational status']);
+        Http::assertSent(fn ($request) => data_get($request->data(), 'options.num_gpu') === 0
+            && data_get($request->data(), 'options.num_predict') === null);
+    }
 }

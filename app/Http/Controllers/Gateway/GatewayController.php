@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Gateway;
 
+use App\Domains\Intelligence\Exceptions\ProviderException;
 use App\Domains\Intelligence\Gateway\Models\GatewayRequest as GatewayRequestModel;
 use App\Domains\Intelligence\Gateway\Services\ErpGatewayService;
 use App\Domains\Intelligence\Gateway\Services\GatewayHealthService;
@@ -95,7 +96,15 @@ class GatewayController extends Controller
     {
         /** @var AuthenticatedGatewayClientData $context */
         $context = $request->attributes->get('gateway.auth');
-        $result = $this->gateway->handle($context, $request->toData($capability), $request);
+        try {
+            $result = $this->gateway->handle($context, $request->toData($capability), $request);
+        } catch (ProviderException|\Illuminate\Http\Client\ConnectionException|\Illuminate\Http\Client\RequestException) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'The local AI provider is unavailable. Please try again later.',
+                'correlation_id' => $request->attributes->get('gateway.correlation_id'),
+            ], 502);
+        }
 
         return response()->json([
             'request_id' => $result['request']->getKey(),

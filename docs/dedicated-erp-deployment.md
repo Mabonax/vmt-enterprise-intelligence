@@ -54,3 +54,30 @@ php artisan gateway:install --verify
 The provisioning operation requires a pre-existing approved organization UUID and creates a dedicated Gateway tenant and an ERP client, issuing an API key and secret only if that ERP client does not already exist. A repeated run reuses the existing client without printing or generating new credentials. Safeguard the one-time credential output: avoid CI logs, shell history and shared terminals. For credentials issued through the web UI, use the operator-only Connected Applications console.
 
 Check is an environment and database preflight, while verify uses the configured live AI provider to check availability of the required chat and embedding models. Neither replaces an actual authenticated ERP-to-Gateway inference acceptance test. The VMT operator must also verify firewall rules, TLS, backup restoration, separate databases, queues and credential rotation before production handover.
+
+## Native Windows local acceptance profile
+
+Use an existing native Ollama instance with XAMPP PHP/MySQL when Docker Desktop is unavailable. Keep the Gateway and ERP databases separate. The local commissioning profile uses loopback ports 8080 (Gateway), 8000 (clinic) and 11434 (Ollama). Do not start a Docker Ollama service alongside the native listener.
+
+`scripts/start-local-native.ps1` starts missing local development listeners without replacing existing processes. Its default CPU mode limits Ollama to one loaded model, one parallel request and a 4096-token context. Supply `-ModelsPath` when existing model files are stored outside Ollama's default location. It preserves model files and does not configure production Windows services, workers or scheduler supervision.
+
+```powershell
+.\scripts\start-local-native.ps1 -ClinicPath C:\xampp\htdocs\gperp-clinic -ModelsPath $env:USERPROFILE
+php artisan gateway:readiness
+```
+
+That model path was verified on the commissioning workstation; use the actual model directory elsewhere. Readiness checks model availability, not successful inference. Verify real chat and embeddings separately.
+
+The 2026-10-10 workstation has NVIDIA driver 546.30, below Ollama's documented 550 minimum. CPU-only inference was verified for `llama3.2:3b` and `embeddinggemma` (768 dimensions). GPU inference requires a compatible driver; do not interpret CPU acceptance as GPU acceptance.
+
+## Provisioning and context safeguards
+
+Installation resolves the existing active organization/client before creating a tenant. Operator-created tenant slugs are supported. Multiple active matches, inactive-only client matches and inactive client tenants fail closed for operator resolution. Reuse does not emit or rotate credentials. Use the provisioning service or operator console to issue credentials, and send one-time output directly to an access-restricted server-side destination.
+
+For connected clients, set `metadata.erp_system` to the approved ERP system identifier. Requests with a different identifier are rejected. Existing unbound clients retain their previous compatibility behavior; operators must bind them before relying on ERP identity checks.
+
+`options.retrieve_knowledge=false` explicitly excludes Gateway knowledge retrieval. The context assembler respects that decision rather than silently repeating retrieval. GPERP's dedicated aggregate connector uses this option with `allow_actions=false`. Other consumers retain the default retrieval behavior.
+
+Provider failures return a sanitized HTTP 502 while failed provider requests/traces are audited. Execution-plan display objectives are bounded to the MySQL column width; the validated full prompt stays in the request payload.
+
+GPERP's opt-in `LocalGatewayLiveAcceptanceTest` exercises its authorized assistant route with a synthetic in-memory ERP database and real Gateway/Ollama HTTP transport. It is separate from authenticated browser acceptance and production readiness.

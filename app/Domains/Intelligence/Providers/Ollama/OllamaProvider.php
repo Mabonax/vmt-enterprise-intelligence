@@ -15,6 +15,7 @@ use App\Domains\Intelligence\Enums\ChatRole;
 use App\Domains\Intelligence\Exceptions\ProviderException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 
 class OllamaProvider implements AiProvider, TokenCounter
@@ -130,6 +131,7 @@ class OllamaProvider implements AiProvider, TokenCounter
             'model' => (string) config('intelligence.providers.ollama.embedding_model', config('intelligence.default_model')),
             'input' => $input,
             'truncate' => true,
+            'options' => (object) Arr::only((array) config('intelligence.providers.ollama.options', []), ['num_gpu']),
             'keep_alive' => config('intelligence.providers.ollama.keep_alive'),
         ]);
 

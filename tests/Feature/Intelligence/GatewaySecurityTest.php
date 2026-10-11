@@ -209,6 +209,41 @@ class GatewaySecurityTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_bound_erp_identity_cannot_be_spoofed(): void
+    {
+        [$organizationId, $tenant, $client, $apiKey] = $this->provisionGatewayClient(['chat'], ['chat']);
+        $client->forceFill(['metadata' => ['erp_system' => 'gperp-clinic']])->save();
+        Http::fake();
+        $this->withToken($apiKey)->postJson(route('api.gateway.chat'), [
+            'organization_id' => $organizationId, 'erp_system' => 'wrong-erp',
+            'correlation_id' => (string) Str::uuid(), 'actor' => ['id' => 'synthetic-operator'], 'prompt' => 'Status',
+        ])->assertForbidden();
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('gateway_requests', 0);
+    }
+
+    public function test_revoked_credential_cannot_reach_inference(): void
+    {
+        [$organizationId, $tenant, $client, $apiKey] = $this->provisionGatewayClient(['chat'], ['chat']);
+        app(GatewayClientProvisioningService::class)->revokeKey($client->id);
+        Http::fake();
+        $this->withToken($apiKey)->postJson(route('api.gateway.chat'), [
+            'organization_id' => $organizationId, 'erp_system' => 'gperp-clinic',
+            'correlation_id' => (string) Str::uuid(), 'actor' => ['id' => 'synthetic-operator'], 'prompt' => 'Status',
+        ])->assertUnauthorized();
+        Http::assertNothingSent();
+    }
+
+    public function test_invalid_credential_is_rejected_without_inference(): void
+    {
+        Http::fake();
+        $this->withToken('gk_invalid.invalid')->postJson(route('api.gateway.chat'), [
+            'organization_id' => (string) Str::uuid(), 'erp_system' => 'gperp-clinic',
+            'correlation_id' => (string) Str::uuid(), 'actor' => ['id' => 'synthetic-operator'], 'prompt' => 'Status',
+        ])->assertUnauthorized();
+        Http::assertNothingSent();
+    }
+
     /**
      * @return array{0: string, 1: GatewayTenant, 2: GatewayClient, 3: string, 4: string}
      */
@@ -268,7 +303,7 @@ class GatewaySecurityTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array<string, string>
      */
     private function hmacHeaders(string $path, array $payload, string $keyIdentifier, string $secret, string $timestamp, string $nonce): array
@@ -291,7 +326,7 @@ class GatewaySecurityTest extends TestCase
     }
 
     /**
-     * @param list<string> $scopes
+     * @param  list<string>  $scopes
      */
     private function jwtToken(string $keyIdentifier, string $organizationId, array $scopes): string
     {

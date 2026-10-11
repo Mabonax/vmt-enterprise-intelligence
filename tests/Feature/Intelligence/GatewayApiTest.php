@@ -6,6 +6,9 @@ namespace Tests\Feature\Intelligence;
 
 use App\Domains\Connections\Models\ConnectedErp;
 use App\Domains\Connections\Models\ErpApiKey;
+use App\Domains\Intelligence\Gateway\Models\GatewayRequest;
+use App\Domains\Intelligence\Knowledge\Services\KnowledgeRetrievalService;
+use App\Domains\Intelligence\Models\ExecutionPlan;
 use Database\Seeders\IntelligenceRuntimeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +19,75 @@ use Tests\TestCase;
 class GatewayApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_aggregate_summary_can_explicitly_exclude_knowledge_retrieval(): void
+    {
+        $this->seed(IntelligenceRuntimeSeeder::class);
+        [$organizationId, $erp, $secret] = $this->provisionErp();
+        $this->mock(KnowledgeRetrievalService::class)
+            ->shouldNotReceive('retrieveForPrompt');
+        Http::fake(['*/chat' => Http::response([
+            'model' => 'llama3.2:3b', 'message' => ['role' => 'assistant', 'content' => 'Four appointments.'], 'done' => true,
+        ])]);
+        $this->withHeaders(['X-ERP-System' => $erp->system_key, 'X-ERP-Key' => $secret])
+            ->postJson(route('api.gateway.summarise'), [
+                'organization_id' => $organizationId, 'erp_system' => $erp->system_key,
+                'correlation_id' => 'aggregate-only-001', 'actor' => ['id' => 'synthetic-operator'],
+                'prompt' => 'Summarise supplied counts', 'context' => ['total' => 4],
+                'options' => ['retrieve_knowledge' => false, 'allow_actions' => false],
+            ])->assertOk()->assertJsonPath('verification.passed', true);
+        Http::assertSent(fn ($request) => $request['tools'] === []);
+    }
+
+    public function test_provider_outage_returns_safe_failure_and_records_failed_trace(): void
+    {
+        $this->seed(IntelligenceRuntimeSeeder::class);
+        [$organizationId, $erp, $secret] = $this->provisionErp();
+        Http::fake(['*/chat' => Http::failedConnection()]);
+        $this->withHeaders(['X-ERP-System' => $erp->system_key, 'X-ERP-Key' => $secret])
+            ->postJson(route('api.gateway.summarise'), [
+                'organization_id' => $organizationId, 'erp_system' => $erp->system_key,
+                'correlation_id' => 'provider-outage-001', 'actor' => ['id' => 'synthetic-operator'],
+                'prompt' => 'Summarise counts', 'options' => ['retrieve_knowledge' => false],
+            ])->assertStatus(502)->assertJsonPath('status', 'failed');
+        $this->assertDatabaseHas('gateway_requests', ['correlation_id' => 'provider-outage-001', 'status' => 'failed']);
+        $this->assertDatabaseHas('execution_traces', ['status' => 'failed', 'completion_reason' => 'provider_error']);
+        $this->assertDatabaseHas('audit_entries', ['event' => 'gateway.request.failed']);
+    }
+
+    public function test_missing_runtime_model_does_not_expose_provider_error_body(): void
+    {
+        $this->seed(IntelligenceRuntimeSeeder::class);
+        [$organizationId, $erp, $secret] = $this->provisionErp();
+        Http::fake(['*/chat' => Http::response(['error' => 'model missing secret-provider-detail'], 404)]);
+        $response = $this->withHeaders(['X-ERP-System' => $erp->system_key, 'X-ERP-Key' => $secret])
+            ->postJson(route('api.gateway.summarise'), [
+                'organization_id' => $organizationId, 'erp_system' => $erp->system_key,
+                'correlation_id' => 'model-missing-001', 'actor' => ['id' => 'synthetic-operator'],
+                'prompt' => 'Summarise counts', 'options' => ['retrieve_knowledge' => false],
+            ])->assertStatus(502);
+        $this->assertStringNotContainsString('secret-provider-detail', $response->getContent());
+    }
+
+    public function test_long_prompt_preserves_request_and_bounds_mysql_plan_objective(): void
+    {
+        $this->seed(IntelligenceRuntimeSeeder::class);
+        [$organizationId, $erp, $secret] = $this->provisionErp();
+        $prompt = str_repeat('Synthetic operational context. ', 30);
+        Http::fake(['*/chat' => Http::response([
+            'model' => 'llama3.2:3b', 'message' => ['role' => 'assistant', 'content' => 'Summary.'], 'done' => true,
+        ])]);
+        $this->withHeaders(['X-ERP-System' => $erp->system_key, 'X-ERP-Key' => $secret])
+            ->postJson(route('api.gateway.summarise'), [
+                'organization_id' => $organizationId, 'erp_system' => $erp->system_key,
+                'correlation_id' => 'long-prompt-001', 'actor' => ['id' => 'synthetic-operator'],
+                'prompt' => $prompt, 'options' => ['retrieve_knowledge' => false],
+            ])->assertOk();
+        $plan = ExecutionPlan::query()->firstOrFail();
+        $this->assertLessThanOrEqual(255, mb_strlen($plan->objective));
+        $request = GatewayRequest::where('correlation_id', 'long-prompt-001')->firstOrFail();
+        $this->assertSame(trim($prompt), $request->request_payload['prompt']);
+    }
 
     public function test_gateway_chat_endpoint_executes_the_enterprise_pipeline(): void
     {
